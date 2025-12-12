@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:med/utils/helpers/helper_functions.dart';
 
 import '../../../utils/constants/colors.dart';
-import '../../../utils/constants/text_strings.dart';
+// import '../../../utils/constants/text_strings.dart';
 
 class MFormDivider extends StatelessWidget {
   const MFormDivider({super.key, required this.dividerText});

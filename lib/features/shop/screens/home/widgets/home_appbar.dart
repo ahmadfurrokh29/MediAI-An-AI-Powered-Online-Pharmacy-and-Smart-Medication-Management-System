@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../../../../common/widgets/appbar/appbar.dart';
 import '../../../../../common/widgets/products/cart/cart_menu_icon.dart';
-import '../../../../../utils/constants/colors.dart';
+// import '../../../../../utils/constants/colors.dart';
 import '../../../../../utils/constants/text_strings.dart';
+import '../../../../../utils/constants/sizes.dart';
 
-class MHomeAppbar extends StatelessWidget {
+// FIX 1: Implement PreferredSizeWidget interface
+class MHomeAppbar extends StatelessWidget implements PreferredSizeWidget { 
   const MHomeAppbar({super.key});
 
   @override
@@ -38,4 +40,8 @@ class MHomeAppbar extends StatelessWidget {
       ],
     );
   }
+
+  // FIX 2: Add the required preferredSize getter.
+  @override
+  Size get preferredSize => const Size.fromHeight(MSizes.appBarHeight);
 }

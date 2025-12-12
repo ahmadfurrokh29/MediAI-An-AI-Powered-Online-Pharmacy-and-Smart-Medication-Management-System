@@ -21,4 +21,7 @@ class MImages {
   static const String deliveredEmailIllustration="assets/images/animations/mail.gif";
   static const String verifyIllustration="assets/images/animations/passenger.gif";
 
+  //Category icons
+  static const String medIcon="assets/icons/categories/medicine.png";
+
 }

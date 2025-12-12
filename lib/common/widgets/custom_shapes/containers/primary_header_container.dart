@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import '../../../../utils/constants/colors.dart';
 import '../curved_edges/curved_edges_widget.dart';
 import 'circular_container.dart';
@@ -19,11 +18,12 @@ class MPrimaryHeaderContainer extends StatelessWidget {
           height: 400,
           child: Stack(
             children: [
+              // 1. Decorative Positioned Circles (Bottom Layers)
               Positioned(
                 top: -150,
                 right: -250,
                 child: MCircularContainer(
-                  backgroundColor: MColors.textWhite.withValues(alpha: 0.1),
+                  backgroundColor: MColors.textWhite.withValues(alpha: 0.1), // Used withOpacity for simplicity
                 ),
               ),
               Positioned(
@@ -33,6 +33,10 @@ class MPrimaryHeaderContainer extends StatelessWidget {
                   backgroundColor: MColors.textWhite.withValues(alpha: 0.1),
                 ),
               ),
+
+              // 2. The Main Content (Top Layer)
+              // THIS IS THE MISSING PIECE!
+              child, // The Column containing MSearchContainer, MSectionHeading, etc.
             ],
           ),
         ),
