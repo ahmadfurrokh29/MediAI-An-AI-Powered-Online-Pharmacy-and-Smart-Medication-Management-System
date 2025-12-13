@@ -24,4 +24,9 @@ class MImages {
   //Category icons
   static const String medIcon="assets/icons/categories/medicine.png";
 
+  //Banners
+   static const String promoBanner1="assets/images/banners/banner1.png";
+   static const String promoBanner2="assets/images/banners/banner2.png";
+   static const String promoBanner3="assets/images/banners/banner3.png";
+
 }
