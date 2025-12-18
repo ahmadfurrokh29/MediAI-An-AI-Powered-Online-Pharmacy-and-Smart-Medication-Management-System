@@ -14,7 +14,7 @@ class MVerticalImageText extends StatelessWidget {
   final void Function()? onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context)  {
 
     final dark = MHelperFunctions.isDarkMode(context);
 

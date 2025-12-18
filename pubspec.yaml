@@ -50,6 +50,7 @@
     - assets/icons/categories/
     # - assets/icons/payment_methods/
     - assets/images/banners/
+    - assets/images/products/
   
   #___________________Local Fonts___________________#
   fonts:

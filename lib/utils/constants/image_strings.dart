@@ -29,4 +29,17 @@ class MImages {
    static const String promoBanner2="assets/images/banners/banner2.png";
    static const String promoBanner3="assets/images/banners/banner3.png";
 
+   //Product Images
+   static const String product1="assets/images/products/med1.jpeg";
+   static const String product2="assets/images/products/med2.jpeg";
+   static const String product3="assets/images/products/med3.jpeg";
+   static const String product4="assets/images/products/med4.jpeg";
+   static const String product5="assets/images/products/med5.jpeg";
+   static const String product6="assets/images/products/med6.jpeg";
+   static const String product7="assets/images/products/med7.jpeg";
+   static const String product8="assets/images/products/med8.jpeg";
+   static const String product9="assets/images/products/med9.jpeg";
+   static const String product10="assets/images/products/med10.jpeg";
+
+
 }

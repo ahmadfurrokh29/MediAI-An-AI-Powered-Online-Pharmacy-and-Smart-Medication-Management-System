@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:med/common/widgets/custom_shapes/containers/search_container.dart';
+import 'package:med/common/widgets/layouts/grid_layout.dart';
+import 'package:med/common/widgets/products/product_cards/product_card_vertical.dart';
 import 'package:med/common/widgets/texts/section_heading.dart';
 import 'package:med/features/shop/screens/home/widgets/home_appbar.dart';
 import 'package:med/features/shop/screens/home/widgets/home_categories.dart';
@@ -48,11 +50,22 @@ class HomeScreen extends StatelessWidget {
           //body carousel
           Padding(
             padding: const EdgeInsets.all(MSizes.defaultSpace),
-            child: MPromoSlider(
-              banners: [
-                MImages.promoBanner2,
-                MImages.promoBanner2,
-                MImages.promoBanner2,
+            child: Column(
+              children: [
+                const MPromoSlider(
+                  banners: [
+                    MImages.promoBanner2,
+                    MImages.promoBanner2,
+                    MImages.promoBanner2,
+                  ],
+                ),
+                const SizedBox(height: MSizes.spaceBtwItems),
+
+                //Added a grid view for products
+                MGridLayout(
+                  itemCount: 4,
+                  itemBuilder: (_, index) => const MProductCardVertical(),
+                ),
               ],
             ),
           ),
