@@ -60,7 +60,8 @@ class HomeScreen extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: MSizes.spaceBtwItems),
-
+                MSectionHeading(title: 'Popular Products', onPressed: () {}),
+                const SizedBox(height: MSizes.spaceBtwItems),
                 //Added a grid view for products
                 MGridLayout(
                   itemCount: 4,

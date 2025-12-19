@@ -1,5 +1,3 @@
-
-
 import 'package:flutter/material.dart';
 
 class MSectionHeading extends StatelessWidget {
@@ -9,12 +7,10 @@ class MSectionHeading extends StatelessWidget {
     this.showActionButton = true,
     required this.title,
     this.buttontitle = 'View all',
-    this.onPressed
-  
-  
+    this.onPressed,
   });
 
-  final Color? textColor ;
+  final Color? textColor;
   final bool showActionButton;
   final String title, buttontitle;
   final void Function()? onPressed;
@@ -22,17 +18,19 @@ class MSectionHeading extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           title,
-          style: Theme.of(context).textTheme.headlineSmall!.apply(color:textColor),maxLines: 1, overflow: TextOverflow.ellipsis,
+          style: Theme.of(
+            context,
+          ).textTheme.headlineSmall!.apply(color: textColor),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
-        if(showActionButton) TextButton(
-          onPressed: onPressed,
-          child:  Text(buttontitle,),
-        )
+        if (showActionButton)
+          TextButton(onPressed: onPressed, child: Text(buttontitle)),
       ],
     );
   }
 }
-

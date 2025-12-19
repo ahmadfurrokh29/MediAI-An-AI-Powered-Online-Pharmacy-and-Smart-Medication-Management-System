@@ -4,6 +4,7 @@ import 'package:med/common/styles/shadows.dart';
 import 'package:med/common/widgets/custom_shapes/containers/rounded_container.dart';
 import 'package:med/common/widgets/icons/circular_icon.dart';
 import 'package:med/common/widgets/images/m_rounded_image.dart';
+import 'package:med/common/widgets/texts/m_brand_title_text_with_verified_icon.dart';
 import 'package:med/common/widgets/texts/product_price_text.dart';
 import 'package:med/common/widgets/texts/product_title_text.dart';
 import 'package:med/utils/constants/colors.dart';
@@ -65,50 +66,40 @@ class MProductCardVertical extends StatelessWidget {
                 children: [
                   MProductTitleText(title: 'CBD medicine', smallSize: true),
                   const SizedBox(height: MSizes.spaceBtwItems / 2),
-                  Row(
-                    children: [
-                      Text(
-                        'Merdicine1',
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
-                        style: Theme.of(context).textTheme.labelMedium,
-                      ),
-                      const SizedBox(width: MSizes.xs),
-                      const Icon(
-                        Iconsax.verify5,
-                        color: MColors.primary,
-                        size: MSizes.iconXs,
-                      ),
-                    ],
+                  MBrandTitleTextWithVerifiedIcon(
+                    title: 'Medlife',
+                    textAlign: TextAlign.start,
                   ),
-                  // Spacer(),
+
                   //price
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      MProductPriceText(price: '9.99'),
-                      Container(
-                        decoration: const BoxDecoration(
-                          color: MColors.dark,
-                          borderRadius: BorderRadius.only(
-                            topLeft: Radius.circular(MSizes.cardRadiusMd),
-                            bottomRight: Radius.circular(
-                              MSizes.productImageRadius,
-                            ),
-                          ),
-                        ),
-                        child: const SizedBox(
-                          width: MSizes.iconLg * 1.2,
-                          height: MSizes.iconLg * 1.2,
-                          child: Center(
-                            child: Icon(Iconsax.add5, color: MColors.white),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
                 ],
               ),
+            ),
+            const Spacer(),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(left: MSizes.sm),
+                  child: MProductPriceText(price: '9.99'),
+                ),
+                Container(
+                  decoration: const BoxDecoration(
+                    color: MColors.dark,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(MSizes.cardRadiusMd),
+                      bottomRight: Radius.circular(MSizes.productImageRadius),
+                    ),
+                  ),
+                  child: const SizedBox(
+                    width: MSizes.iconLg * 1.2,
+                    height: MSizes.iconLg * 1.2,
+                    child: Center(
+                      child: Icon(Iconsax.add5, color: MColors.white),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

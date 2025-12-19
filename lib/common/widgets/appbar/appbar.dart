@@ -6,7 +6,7 @@ class MAppbar extends StatelessWidget {
   const MAppbar({
     super.key,
     this.title,
-    this.showBackArrow = true,
+    this.showBackArrow = false,
     this.leadingIcon,
     this.actions,
     this.leadingOnPressed,
@@ -26,20 +26,18 @@ class MAppbar extends StatelessWidget {
         // Leading
         showBackArrow
             ? IconButton(
-          onPressed: () => Get.back(),
-          icon: const Icon(Iconsax.arrow_left, color: Colors.black),
-        )
+                onPressed: () => Get.back(),
+                icon: const Icon(Iconsax.arrow_left, color: Colors.black),
+              )
             : leadingIcon != null
             ? IconButton(
-          onPressed: leadingOnPressed,
-          icon: Icon(leadingIcon, color: Colors.black),
-        )
+                onPressed: leadingOnPressed,
+                icon: Icon(leadingIcon, color: Colors.black),
+              )
             : const SizedBox(width: 48),
 
         // Title
-        Expanded(
-          child: title ?? const SizedBox(),
-        ),
+        Expanded(child: title ?? const SizedBox()),
 
         // Actions
         Row(children: actions ?? []),

@@ -1,17 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:med/utils/constants/colors.dart';
 import 'package:med/utils/constants/sizes.dart';
-
 
 class MRoundedImage extends StatelessWidget {
   const MRoundedImage({
     super.key,
-    this.width ,
+    this.width,
     this.height,
     required this.imageUrl,
     this.applyImageRadius = true,
     this.border,
-    this.backgroundColor = MColors.light,
+    this.backgroundColor,
     this.fit = BoxFit.cover,
     this.padding,
     this.isNetworkImage = false,
@@ -23,7 +21,7 @@ class MRoundedImage extends StatelessWidget {
   final String imageUrl;
   final bool applyImageRadius;
   final BoxBorder? border;
-  final Color backgroundColor;
+  final Color? backgroundColor;
   final BoxFit? fit;
   final EdgeInsetsGeometry? padding;
   final bool isNetworkImage;

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:med/utils/helpers/helper_functions.dart';
 import '../../../../../common/widgets/appbar/appbar.dart';
 import '../../../../../common/widgets/products/cart/cart_menu_icon.dart';
 // import '../../../../../utils/constants/colors.dart';
@@ -6,11 +7,12 @@ import '../../../../../utils/constants/text_strings.dart';
 import '../../../../../utils/constants/sizes.dart';
 
 // FIX 1: Implement PreferredSizeWidget interface
-class MHomeAppbar extends StatelessWidget implements PreferredSizeWidget { 
+class MHomeAppbar extends StatelessWidget implements PreferredSizeWidget {
   const MHomeAppbar({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final dark = MHelperFunctions.isDarkMode(context);
     return MAppbar(
       showBackArrow: true,
       title: Column(
@@ -18,24 +20,22 @@ class MHomeAppbar extends StatelessWidget implements PreferredSizeWidget {
         children: [
           Text(
             MTexts.homeAppbarTitle,
-            style: Theme.of(context)
-                .textTheme
-                .labelMedium!
-                .apply(color: Colors.black),
+            style: Theme.of(context).textTheme.labelMedium!.apply(
+              color: dark ? Colors.white : Colors.black,
+            ),
           ),
           Text(
             MTexts.homeAppbarSubTitle,
-            style: Theme.of(context)
-                .textTheme
-                .headlineSmall!
-                .apply(color: Colors.black),
+            style: Theme.of(context).textTheme.headlineSmall!.apply(
+              color: dark ? Colors.white : Colors.black,
+            ),
           ),
         ],
       ),
       actions: [
         MCartCounterIcon(
           onPressed: () {},
-          iconColor: Colors.black,
+          iconColor: dark ? Colors.white : Colors.black,
         ),
       ],
     );
