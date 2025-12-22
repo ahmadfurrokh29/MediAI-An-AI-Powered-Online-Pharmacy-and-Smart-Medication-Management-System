@@ -41,5 +41,9 @@ class MImages {
    static const String product9="assets/images/products/med9.jpeg";
    static const String product10="assets/images/products/med10.jpeg";
 
+   //user
+   static const String user1="assets/images/user/user.png";
+
+
 
 }

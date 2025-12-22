@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:med/utils/constants/sizes.dart';
+import 'package:med/utils/device/device_utility.dart';
 
-class MAppbar extends StatelessWidget {
-  const MAppbar({
+class MAppBar extends StatelessWidget implements PreferredSizeWidget {
+  const MAppBar({
     super.key,
     this.title,
-    this.showBackArrow = false,
-    this.leadingIcon,
     this.actions,
+    this.leadingIcon,
     this.leadingOnPressed,
+    this.showBackArrow = false,
   });
 
   final Widget? title;
@@ -20,28 +22,21 @@ class MAppbar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        // Leading
-        showBackArrow
-            ? IconButton(
-                onPressed: () => Get.back(),
-                icon: const Icon(Iconsax.arrow_left, color: Colors.black),
-              )
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: MSizes.md),
+      child: AppBar(
+        automaticallyImplyLeading: false,
+        leading: showBackArrow
+            ? IconButton(onPressed: () => Get.back(), icon: const Icon(Iconsax.arrow_left))
             : leadingIcon != null
-            ? IconButton(
-                onPressed: leadingOnPressed,
-                icon: Icon(leadingIcon, color: Colors.black),
-              )
-            : const SizedBox(width: 48),
-
-        // Title
-        Expanded(child: title ?? const SizedBox()),
-
-        // Actions
-        Row(children: actions ?? []),
-      ],
-    );
+                ? IconButton(onPressed: leadingOnPressed, icon: Icon(leadingIcon))
+                : null,
+        title: title,
+        actions: actions,
+      ), // AppBar
+    ); // Padding
   }
+
+  @override
+  Size get preferredSize => Size.fromHeight(MDeviceUtils.getAppBarHeight());
 }

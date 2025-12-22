@@ -13,7 +13,7 @@ class MHomeAppbar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     final dark = MHelperFunctions.isDarkMode(context);
-    return MAppbar(
+    return MAppBar(
       showBackArrow: true,
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

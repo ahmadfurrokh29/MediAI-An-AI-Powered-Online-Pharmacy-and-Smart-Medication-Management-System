@@ -5,7 +5,7 @@ import 'package:med/utils/helpers/helper_functions.dart';
 
 class MVerticalImageText extends StatelessWidget {
   const MVerticalImageText({
-    super.key, required this.image, required this.title,  this.textColor=MColors.white, this.backgroundColor=MColors.white, this.onTap,
+    super.key, required this.image, required this.title,  this.textColor=MColors.white, this.backgroundColor, this.onTap,
   });
 
   final String image, title;

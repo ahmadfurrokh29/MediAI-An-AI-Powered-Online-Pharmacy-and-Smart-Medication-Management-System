@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+ import 'package:flutter/material.dart';
 import 'package:med/common/widgets/custom_shapes/containers/search_container.dart';
 import 'package:med/common/widgets/layouts/grid_layout.dart';
 import 'package:med/common/widgets/products/product_cards/product_card_vertical.dart';
@@ -16,6 +16,7 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
+    
     body: SingleChildScrollView(
       child: Column(
         children: [
@@ -44,6 +45,7 @@ class HomeScreen extends StatelessWidget {
                     ],
                   ),
                 ),
+                SizedBox(height: MSizes.spaceBtwSections)
               ],
             ),
           ),

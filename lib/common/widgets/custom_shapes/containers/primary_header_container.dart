@@ -14,31 +14,27 @@ class MPrimaryHeaderContainer extends StatelessWidget {
       child: Container(
         color: MColors.primary,
         padding: const EdgeInsets.all(0),
-        child: SizedBox(
-          height: 400,
-          child: Stack(
-            children: [
-              // 1. Decorative Positioned Circles (Bottom Layers)
-              Positioned(
-                top: -150,
-                right: -250,
-                child: MCircularContainer(
-                  backgroundColor: MColors.textWhite.withValues(alpha: 0.1), // Used withOpacity for simplicity
-                ),
+        child: Stack(
+          children: [
+            // 1. Decorative Positioned Circles (Bottom Layers)
+            Positioned(
+              top: -150,
+              right: -250,
+              child: MCircularContainer(
+                backgroundColor: MColors.textWhite.withValues(alpha: 0.1), // Used withOpacity for simplicity
               ),
-              Positioned(
-                top: 100,
-                right: -300,
-                child: MCircularContainer(
-                  backgroundColor: MColors.textWhite.withValues(alpha: 0.1),
-                ),
+            ),
+            Positioned(
+              top: 100,
+              right: -300,
+              child: MCircularContainer(
+                backgroundColor: MColors.textWhite.withValues(alpha: 0.1),
               ),
-
-              // 2. The Main Content (Top Layer)
-              // THIS IS THE MISSING PIECE!
-              child, // The Column containing MSearchContainer, MSectionHeading, etc.
-            ],
-          ),
+            ),
+        
+            
+            child, // The Column containing MSearchContainer, MSectionHeading, etc.
+          ],
         ),
       ),
     );

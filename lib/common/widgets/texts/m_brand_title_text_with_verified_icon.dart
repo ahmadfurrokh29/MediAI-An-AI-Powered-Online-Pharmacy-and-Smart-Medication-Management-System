@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/painting.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:med/common/widgets/texts/m_brand_title_text.dart';
 import 'package:med/utils/constants/colors.dart';
@@ -13,7 +12,7 @@ class MBrandTitleTextWithVerifiedIcon extends StatelessWidget {
     this.maxlines = 1,
     required this.title,
     this.iconColor = MColors.primary,
-    this.textAlign = TextAlign.start,
+    this.textAlign = TextAlign.center,
     this.brandTextSize = TextSizes.small,
   });
   final Color? textColor, iconColor;

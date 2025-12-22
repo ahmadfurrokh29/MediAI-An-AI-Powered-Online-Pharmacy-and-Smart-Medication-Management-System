@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:med/utils/constants/colors.dart';
 import 'package:med/utils/constants/sizes.dart';
+import 'package:med/utils/helpers/helper_functions.dart';
 
 class MCircularImage extends StatelessWidget {
   const MCircularImage({
@@ -8,40 +9,35 @@ class MCircularImage extends StatelessWidget {
     this.width = 56,
     this.height = 56,
     this.overlayColor,
-    this.backgroundColor,
+    this.backgroundColor, 
     required this.image,
     this.fit = BoxFit.cover,
-    this.padding = MSizes.sm,
+    this.padding = MSizes.sm, // IMPORTANT
     this.isNetworkImage = false,
-    required this.dark,
   });
 
-  final bool dark;
-  final double width;
-  final double height;
+  final BoxFit fit;
+  final String image;
+  final bool isNetworkImage;
   final Color? overlayColor;
   final Color? backgroundColor;
-  final String image;
-  final BoxFit fit;
-  final double padding;
-  final bool isNetworkImage;
+  final double width, height, padding;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: width,
-      height: height,
-      padding: EdgeInsets.all(padding),
-      decoration: BoxDecoration(
-        color: backgroundColor ?? (dark ? MColors.black : MColors.white),
-        borderRadius: BorderRadius.circular(100),
-      ),
-      child: Center(
+    return ClipOval(
+      child: Container(
+        width: width,
+        height: height,
+        color: backgroundColor ??
+            (MHelperFunctions.isDarkMode(context)
+                ? MColors.black
+                : MColors.white),
         child: Image(
           fit: fit,
           image: isNetworkImage
               ? NetworkImage(image)
-              : AssetImage(image) as ImageProvider,
+              : AssetImage(image),
           color: overlayColor,
         ),
       ),
