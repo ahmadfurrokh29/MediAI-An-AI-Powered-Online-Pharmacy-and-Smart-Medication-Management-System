@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:med/common/widgets/appbar/appbar.dart';
 import 'package:med/common/widgets/custom_shapes/containers/primary_header_container.dart';
 import 'package:med/common/widgets/list_tiles/settings_menu_tile.dart';
 import 'package:med/common/widgets/list_tiles/user_profile_tile.dart';
 import 'package:med/common/widgets/texts/section_heading.dart';
+import 'package:med/features/personalization/screens/profile/profile.dart';
 import 'package:med/utils/constants/colors.dart';
 import 'package:med/utils/constants/sizes.dart';
 
@@ -31,7 +33,7 @@ class SettingsScreen extends StatelessWidget {
                     ),
                   ),
                   //Profile Card
-                  const MUserProfileTile(),
+                  MUserProfileTile(onPressed:()=>Get.to(() => const ProfileScreen())),
                   const SizedBox(height: MSizes.spaceBtwSections),
                 ],
               ),

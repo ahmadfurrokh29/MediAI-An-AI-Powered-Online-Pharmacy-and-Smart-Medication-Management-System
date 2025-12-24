@@ -5,11 +5,14 @@ import 'package:med/utils/constants/colors.dart';
 import 'package:med/utils/constants/image_strings.dart';
 
 class MUserProfileTile extends StatelessWidget {
-  const MUserProfileTile({super.key});
+  const MUserProfileTile({super.key, required this.onPressed});
 
+  final VoidCallback onPressed; 
   @override
   Widget build(BuildContext context) {
     return ListTile(
+      onTap: onPressed, // ✅ THIS WAS MISSING
+
       leading: const MCircularImage(
         image: MImages.user1,
         width: 50,
@@ -29,7 +32,7 @@ class MUserProfileTile extends StatelessWidget {
         ).textTheme.bodyMedium!.apply(color: MColors.white),
       ),
       trailing: IconButton(
-        onPressed: () {},
+        onPressed: onPressed,
         icon: const Icon(Iconsax.edit, color: MColors.white),
       ),
     ); // ListTile
