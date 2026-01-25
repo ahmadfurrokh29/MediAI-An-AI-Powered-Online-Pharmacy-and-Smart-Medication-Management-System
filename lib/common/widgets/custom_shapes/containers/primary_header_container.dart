@@ -21,18 +21,27 @@ class MPrimaryHeaderContainer extends StatelessWidget {
               top: -150,
               right: -250,
               child: MCircularContainer(
-                backgroundColor: MColors.textWhite.withValues(alpha: 0.1), // Used withOpacity for simplicity
+                backgroundColor: const Color.fromARGB(
+                  255,
+                  21,
+                  90,
+                  44,
+                ).withValues(alpha: 0.6), // Used withOpacity for simplicity
               ),
             ),
             Positioned(
               top: 100,
               right: -300,
               child: MCircularContainer(
-                backgroundColor: MColors.textWhite.withValues(alpha: 0.1),
+                backgroundColor: const Color.fromARGB(
+                  255,
+                  21,
+                  90,
+                  44,
+                ).withValues(alpha: 0.6),
               ),
             ),
-        
-            
+
             child, // The Column containing MSearchContainer, MSectionHeading, etc.
           ],
         ),

@@ -70,7 +70,7 @@ class Store extends StatelessWidget {
                         itemCount: 4,
                         mainAxisExtent: 80,
                         itemBuilder: (_, index) {
-                          return MBrandCard(showBorder: false);
+                          return MBrandCard(showBorder: true);
                         }, //_________________________________________________________till here
                       ),
                     ],

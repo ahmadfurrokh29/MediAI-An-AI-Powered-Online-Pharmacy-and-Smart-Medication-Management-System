@@ -22,14 +22,14 @@ class MProductCardVertical extends StatelessWidget {
     final dark = MHelperFunctions.isDarkMode(context);
     //container with side padding, color, edge, radius and shadow
     return GestureDetector(
-      onTap: ()=> Get.to(()=>const MProductDetail()),
+      onTap: () => Get.to(() => const MProductDetail()),
       child: Container(
         width: 180,
         padding: const EdgeInsets.all(1),
         decoration: BoxDecoration(
           boxShadow: [MShadowStyle.verticalProductShadow],
           borderRadius: BorderRadius.circular(MSizes.productImageRadius),
-          color: dark ? MColors.darkerGrey : MColors.white,
+          color: dark ? MColors.darkerGrey : MColors.light1,
         ),
         child: Column(
           children: [
@@ -46,8 +46,27 @@ class MProductCardVertical extends StatelessWidget {
                     applyImageRadius: true,
                   ),
 
+                  /// sales tag
+                  Positioned(
+                    top: 12,
+                    child: MRoundedContainer(
+                      radius: MSizes.sm,
+                      backgroundColor: MColors.secondary.withValues(alpha: 0.8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: MSizes.sm,
+                        vertical: MSizes.xs,
+                      ),
+                      child: Text(
+                        '25%',
+                        style: Theme.of(
+                          context,
+                        ).textTheme.labelLarge!.apply(color: MColors.black),
+                      ),
+                    ),
+                  ),
+
                   //Wishlist button
-                  const Positioned(
+                  Positioned(
                     top: 0,
                     right: 0,
                     child: MCircularIcon(
@@ -83,8 +102,10 @@ class MProductCardVertical extends StatelessWidget {
               children: [
                 Padding(
                   padding: const EdgeInsets.only(left: MSizes.sm),
-                  child: MProductPriceText(price: '9.99'),
+                  child: MProductPriceText(price: '175'),
                 ),
+
+                ///add to cart button
                 Container(
                   decoration: const BoxDecoration(
                     color: MColors.dark,

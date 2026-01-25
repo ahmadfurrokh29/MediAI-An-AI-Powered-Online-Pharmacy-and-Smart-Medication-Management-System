@@ -52,22 +52,27 @@ class OnBoardingScreen extends StatelessWidget {
 }
 
 class OnBoardingNextButton extends StatelessWidget {
-  const OnBoardingNextButton({
-    super.key,
-  });
+  const OnBoardingNextButton({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final dark= MHelperFunctions.isDarkMode(context);
+    final dark = MHelperFunctions.isDarkMode(context);
     return Positioned(
       right: MSizes.defaultSpace,
       bottom: MDeviceUtils.getBottomNavigationBarHeight(),
       child: ElevatedButton(
         onPressed: () => OnBoardingController.instance.nextPage(),
-        style: ElevatedButton.styleFrom(
-          shape: CircleBorder(),
-          backgroundColor: dark? MColors.primary:Colors.black,
-        ),
+        style:
+            ElevatedButton.styleFrom(
+              shape: const CircleBorder(),
+              backgroundColor: dark ? MColors.primary : Colors.black,
+              elevation: 0,
+              shadowColor: Colors.transparent,
+              overlayColor: Colors.transparent,
+            ).copyWith(
+              overlayColor: WidgetStateProperty.all(Colors.transparent),
+              side: WidgetStateProperty.all(BorderSide.none),
+            ),
         child: Icon(Iconsax.arrow_right_3),
       ),
     );

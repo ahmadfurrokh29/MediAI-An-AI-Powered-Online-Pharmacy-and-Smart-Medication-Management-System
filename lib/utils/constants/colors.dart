@@ -4,7 +4,7 @@ class MColors {
   MColors._();
 
   // App Basic Colors
-  static const Color primary = Color(0xff4c814b);
+  static const Color primary = Color(0xff55A729);
   static const Color secondary = Color(0xFFFFE248);
   static const Color accent = Color(0xFFb0c7ff);
 
@@ -15,7 +15,10 @@ class MColors {
 
   // Background Colors
   static const Color light = Color(0xFFF6F6F6);
+  static const Color light1 = Color(0xFFedf2f4);
+  static const Color light2 = Color(0xFFfafaff);
   static const Color dark = Color(0xFF272727);
+  static const Color dark1 = Color(0xFF343a40);
   static const Color primaryBackground = Color(0xFFF5F5FF);
 
   // Background Container Colors
@@ -37,7 +40,7 @@ class MColors {
   static const Color warning = Color(0xFFFF5700);
   static const Color info = Color(0xFF1976D2);
 
-// Neutral Shades
+  // Neutral Shades
   static const Color black = Color(0xFF232323);
   static const Color darkerGrey = Color(0xFF4F4F4F);
   static const Color darkGrey = Color(0xFF939393);
@@ -46,6 +49,4 @@ class MColors {
   static const Color lightGrey = Color(0xFFF9F9F9);
   static const Color white = Color(0xFFFFFFFF);
   // Additional Colors
-  
-
 }

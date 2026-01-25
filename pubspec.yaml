@@ -22,7 +22,7 @@
   smooth_page_indicator: ^2.0.1
   dots_indicator: ^2.1.0
   # carousel_slider_x: ^6.0.7
-  carousel_slider: ^5.1.1
+  
 
  # icons
   iconsax: ^0.0.8
@@ -31,6 +31,9 @@
   get: ^4.6.6
   get_storage: ^2.1.1
   #product specific
+  carousel_slider: ^5.1.1
+  readmore: ^3.0.0
+  flutter_rating_bar: ^4.0.1
 
 
  dev_dependencies:

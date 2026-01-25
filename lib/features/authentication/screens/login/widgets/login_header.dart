@@ -1,4 +1,3 @@
-
 // import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../../../../../utils/constants/image_strings.dart';
@@ -12,14 +11,15 @@ class MLoginHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dark = MHelperFunctions.isDarkMode(context);
-    return  Column(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Image(
-
-          height: 150,
-          image: AssetImage(
-            dark ? MImages.darkAppLogo : MImages.lightAppLogo,
+        Center(
+          child: Image(
+            height: 150,
+            image: AssetImage(
+              dark ? MImages.darkAppLogo : MImages.lightAppLogo,
+            ),
           ),
         ),
         Text(
