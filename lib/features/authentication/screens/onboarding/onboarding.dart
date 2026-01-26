@@ -9,7 +9,6 @@ import 'package:med/utils/constants/image_strings.dart';
 import 'package:med/utils/constants/text_strings.dart';
 import 'package:med/utils/device/device_utility.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:med/utils/helpers/helper_functions.dart';
 import '../../../../utils/constants/sizes.dart';
 
 class OnBoardingScreen extends StatelessWidget {
@@ -56,7 +55,6 @@ class OnBoardingNextButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dark = MHelperFunctions.isDarkMode(context);
     return Positioned(
       right: MSizes.defaultSpace,
       bottom: MDeviceUtils.getBottomNavigationBarHeight(),
@@ -65,7 +63,7 @@ class OnBoardingNextButton extends StatelessWidget {
         style:
             ElevatedButton.styleFrom(
               shape: const CircleBorder(),
-              backgroundColor: dark ? MColors.primary : Colors.black,
+              backgroundColor: MColors.primary,
               elevation: 0,
               shadowColor: Colors.transparent,
               overlayColor: Colors.transparent,

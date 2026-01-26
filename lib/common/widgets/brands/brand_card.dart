@@ -20,7 +20,7 @@ class MBrandCard extends StatelessWidget {
     final dark = MHelperFunctions.isDarkMode(context);
     return GestureDetector(
       //_____________________________make this brand card
-      onTap: () {},
+      onTap: onTap,
       child: MRoundedContainer(
         showBorder: showBorder,
         backgroundColor: dark ? Colors.transparent : MColors.lightGrey,

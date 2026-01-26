@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:get/instance_manager.dart';
 import 'package:med/common/widgets/appbar/appbar.dart';
 import 'package:med/common/widgets/appbar/tabbar.dart';
 import 'package:med/common/widgets/brands/brand_card.dart';
@@ -6,6 +8,8 @@ import 'package:med/common/widgets/custom_shapes/containers/search_container.dar
 import 'package:med/common/widgets/layouts/grid_layout.dart';
 import 'package:med/common/widgets/products/cart/cart_menu_icon.dart';
 import 'package:med/common/widgets/texts/section_heading.dart';
+import 'package:med/features/shop/screens/brand/all_brands.dart';
+import 'package:med/features/shop/screens/brand/brand_products.dart';
 import 'package:med/features/shop/screens/store/widgets/category_tab.dart';
 import 'package:med/utils/constants/sizes.dart';
 import 'package:med/utils/helpers/helper_functions.dart';
@@ -28,7 +32,7 @@ class Store extends StatelessWidget {
           actions: [
             MCartCounterIcon(
               onPressed: () {},
-              iconColor: const Color.fromARGB(255, 255, 255, 255),
+              iconColor: dark ? Colors.white : Colors.black,
             ),
           ],
         ),
@@ -61,7 +65,7 @@ class Store extends StatelessWidget {
                       //Featured Brands Section
                       MSectionHeading(
                         title: 'Featured Brands',
-                        onPressed: () {},
+                        onPressed: () => Get.to(() => const AllBrandsScreen()),
                       ),
                       const SizedBox(height: MSizes.spaceBtwItems / 1.5),
                       //_____________________________________________________code is correct till here
@@ -70,7 +74,10 @@ class Store extends StatelessWidget {
                         itemCount: 4,
                         mainAxisExtent: 80,
                         itemBuilder: (_, index) {
-                          return MBrandCard(showBorder: true);
+                          return MBrandCard(
+                            showBorder: true,
+                            onTap: () => Get.to(() => const BrandProducts()),
+                          );
                         }, //_________________________________________________________till here
                       ),
                     ],
