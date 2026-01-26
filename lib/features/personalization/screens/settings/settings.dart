@@ -7,6 +7,8 @@ import 'package:med/common/widgets/list_tiles/settings_menu_tile.dart';
 import 'package:med/common/widgets/list_tiles/user_profile_tile.dart';
 import 'package:med/common/widgets/texts/section_heading.dart';
 import 'package:med/features/personalization/screens/address/address.dart';
+import 'package:med/features/personalization/screens/mymedicalhistory/mymedicalhistory.dart';
+import 'package:med/features/personalization/screens/mymedication/my_medication.dart';
 import 'package:med/features/personalization/screens/profile/profile.dart';
 import 'package:med/features/shop/screens/cart/cart.dart';
 import 'package:med/features/shop/screens/order/order.dart';
@@ -54,6 +56,18 @@ class SettingsScreen extends StatelessWidget {
                     showActionButton: false,
                   ),
                   const SizedBox(height: MSizes.spaceBtwItems),
+                  MSettingsMenuTile(
+                    icon: Iconsax.archive,
+                    title: 'My Medical History',
+                    subTitle: 'Help us to know better',
+                    onTap: () => Get.to(() => MMyMedicalHistoryScreen()),
+                  ),
+                  MSettingsMenuTile(
+                    icon: Iconsax.hospital,
+                    title: 'My Medication',
+                    subTitle: 'Mention your medication details',
+                    onTap: () => Get.to(() => MMyMedicationScreen()),
+                  ),
 
                   MSettingsMenuTile(
                     icon: Iconsax.safe_home,

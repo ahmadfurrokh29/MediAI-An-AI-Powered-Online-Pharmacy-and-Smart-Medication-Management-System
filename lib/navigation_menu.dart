@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:med/features/chatbot/chatbot_screen.dart';
 import 'package:med/features/personalization/screens/settings/settings.dart';
 import 'package:med/features/shop/screens/home/home.dart';
 import 'package:med/features/shop/screens/store/store.dart';
-import 'package:med/features/shop/screens/wishlist/wishlist.dart';
 import 'package:med/utils/constants/colors.dart';
 import 'package:med/utils/helpers/helper_functions.dart';
 
@@ -40,8 +40,8 @@ class NavigationMenu extends StatelessWidget {
                 label: 'Store',
               ),
               const NavigationDestination(
-                icon: Icon(Iconsax.heart),
-                label: 'Wishlist',
+                icon: Icon(Iconsax.message),
+                label: 'Pharmacist',
               ),
               const NavigationDestination(
                 icon: Icon(Iconsax.user),
@@ -62,7 +62,7 @@ class NavigationController extends GetxController {
   final screens = [
     const HomeScreen(),
     const Store(),
-    const FavouriteScreen(),
+    const ChatbotScreen(),
     const SettingsScreen(),
   ];
 }

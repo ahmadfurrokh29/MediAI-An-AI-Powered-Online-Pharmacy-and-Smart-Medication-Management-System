@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:med/common/widgets/products/wishlist/wishlist_menu_icon.dart';
 import 'package:med/utils/helpers/helper_functions.dart';
 import '../../../../../common/widgets/appbar/appbar.dart';
 import '../../../../../common/widgets/products/cart/cart_menu_icon.dart';
@@ -33,6 +34,10 @@ class MHomeAppbar extends StatelessWidget implements PreferredSizeWidget {
         ],
       ),
       actions: [
+        MWishListIcon(
+          onPressed: () {},
+          iconColor: dark ? Colors.white : Colors.black,
+        ),
         MCartCounterIcon(
           onPressed: () {},
           iconColor: dark ? Colors.white : Colors.black,

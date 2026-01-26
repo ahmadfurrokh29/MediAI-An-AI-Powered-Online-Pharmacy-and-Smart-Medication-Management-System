@@ -34,6 +34,7 @@
   carousel_slider: ^5.1.1
   readmore: ^3.0.0
   flutter_rating_bar: ^4.0.1
+  image_picker: ^1.2.1
 
 
  dev_dependencies:
