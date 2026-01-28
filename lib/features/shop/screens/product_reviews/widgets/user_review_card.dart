@@ -9,11 +9,11 @@ import 'package:readmore/readmore.dart';
 
 class UserReviewCard extends StatelessWidget {
   const UserReviewCard({
-    Key? key,
+    super.key,
     required this.name,
     required this.rating,
     required this.image,
-  }) : super(key: key);
+  });
   final String name;
   final double rating;
   final String image;

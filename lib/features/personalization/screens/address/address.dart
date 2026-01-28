@@ -8,15 +8,15 @@ import 'package:med/utils/constants/colors.dart';
 import 'package:med/utils/constants/sizes.dart';
 
 class UserAddressScreen extends StatelessWidget {
-  const UserAddressScreen({Key? key}) : super(key: key);
+  const UserAddressScreen({super.key});
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       floatingActionButton: FloatingActionButton(
         backgroundColor: MColors.primary,
         onPressed: () => Get.to(() => const AddNewAddressScreen()),
-        child: Icon(Iconsax.add, color: MColors.white),
         shape: CircleBorder(),
+        child: Icon(Iconsax.add, color: MColors.white),
       ),
       appBar: MAppBar(
         showBackArrow: true,

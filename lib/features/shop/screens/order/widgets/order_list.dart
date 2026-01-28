@@ -6,7 +6,7 @@ import 'package:med/utils/constants/sizes.dart';
 import 'package:med/utils/helpers/helper_functions.dart';
 
 class MOrderListItems extends StatelessWidget {
-  const MOrderListItems({Key? key}) : super(key: key);
+  const MOrderListItems({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -15,7 +15,7 @@ class MOrderListItems extends StatelessWidget {
     return ListView.separated(
       shrinkWrap: true,
       itemCount: 5,
-      separatorBuilder: (_, __) => const SizedBox(height: MSizes.spaceBtwItems),
+      separatorBuilder: (_, _) => const SizedBox(height: MSizes.spaceBtwItems),
       itemBuilder: (_, index) => MRoundedContainer(
         showBorder: true,
         padding: EdgeInsets.all(MSizes.md),

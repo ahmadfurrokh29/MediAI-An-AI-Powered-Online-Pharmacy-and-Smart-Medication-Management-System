@@ -10,7 +10,7 @@ class MRatingBarIndicator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return RatingBarIndicator(
-      itemBuilder: (_, __) => const Icon(Iconsax.star1, color: MColors.primary),
+      itemBuilder: (_, _) => const Icon(Iconsax.star1, color: MColors.primary),
       itemCount: 5,
       rating: rating,
       itemSize: 20,

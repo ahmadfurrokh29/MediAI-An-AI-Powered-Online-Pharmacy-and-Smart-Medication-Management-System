@@ -25,7 +25,7 @@ class MCartItem extends StatelessWidget {
         ),
         const SizedBox(width: MSizes.defaultSpace),
 
-        /// title and price
+        /// title 
         Expanded(
           child: const Column(
             mainAxisSize: MainAxisSize.min,

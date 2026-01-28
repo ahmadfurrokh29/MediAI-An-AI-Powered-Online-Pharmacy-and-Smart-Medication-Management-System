@@ -4,7 +4,7 @@ import 'package:med/common/widgets/appbar/appbar.dart';
 import 'package:med/utils/constants/sizes.dart';
 
 class AddNewAddressScreen extends StatelessWidget {
-  const AddNewAddressScreen({Key? key}) : super(key: key);
+  const AddNewAddressScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
