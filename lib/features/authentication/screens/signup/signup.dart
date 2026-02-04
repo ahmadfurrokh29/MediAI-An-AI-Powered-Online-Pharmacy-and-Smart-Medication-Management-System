@@ -6,13 +6,11 @@ import 'package:med/features/authentication/screens/signup/widgets/signup_form.d
 import 'package:med/utils/constants/sizes.dart';
 import 'package:med/utils/constants/text_strings.dart';
 
-
 class SignupScreen extends StatelessWidget {
   const SignupScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       appBar: AppBar(),
       body: SingleChildScrollView(
@@ -23,16 +21,13 @@ class SignupScreen extends StatelessWidget {
             children: [
               Text(
                 MTexts.signupTitle,
-                style: Theme
-                    .of(context)
-                    .textTheme
-                    .headlineMedium,
+                style: Theme.of(context).textTheme.headlineMedium,
               ),
               const SizedBox(height: MSizes.spaceBtwSections),
               MSignupForm(),
-              SizedBox(height: 20,),
+              SizedBox(height: 20),
               MFormDivider(dividerText: MTexts.orSignUPWith.capitalize!),
-              SizedBox(height: 20,),
+              SizedBox(height: 20),
               const MSocialButtons(),
             ],
           ),
@@ -41,5 +36,3 @@ class SignupScreen extends StatelessWidget {
     );
   }
 }
-
-

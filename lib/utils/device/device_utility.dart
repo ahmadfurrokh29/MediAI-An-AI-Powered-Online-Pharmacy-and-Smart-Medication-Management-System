@@ -6,7 +6,6 @@ import 'dart:io';
 import 'dart:async';
 import 'package:url_launcher/url_launcher_string.dart';
 
-
 class MDeviceUtils {
   static void hideKeyboard(BuildContext context) {
     FocusScope.of(context).requestFocus(FocusNode());
@@ -30,9 +29,10 @@ class MDeviceUtils {
 
   static void setFullScreen(bool enable) {
     SystemChrome.setEnabledSystemUIMode(
-        enable ? SystemUiMode.immersiveSticky : SystemUiMode.edgeToEdge
+      enable ? SystemUiMode.immersiveSticky : SystemUiMode.edgeToEdge,
     );
   }
+
   static double getScreenHeight() {
     return MediaQuery.of(Get.context!).size.height;
   }
@@ -68,7 +68,8 @@ class MDeviceUtils {
   }
 
   static Future<bool> isPhysicalDevice() async {
-    return defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS;
+    return defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS;
   }
 
   static void vibrate(Duration duration) {
@@ -76,7 +77,9 @@ class MDeviceUtils {
     Future.delayed(duration, () => HapticFeedback.vibrate());
   }
 
-  static Future<void> setPreferredOrientations(List<DeviceOrientation> orientations) async {
+  static Future<void> setPreferredOrientations(
+    List<DeviceOrientation> orientations,
+  ) async {
     await SystemChrome.setPreferredOrientations(orientations);
   }
 
@@ -85,7 +88,10 @@ class MDeviceUtils {
   }
 
   static void showStatusBar() {
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: SystemUiOverlay.values);
+    SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.manual,
+      overlays: SystemUiOverlay.values,
+    );
   }
 
   static Future<bool> hasInternetConnection() async {
@@ -104,11 +110,12 @@ class MDeviceUtils {
   static bool isAndroid() {
     return Platform.isAndroid;
   }
+
   static Future<void> launchUrl(String url) async {
     if (await canLaunchUrlString(url)) {
       await launchUrlString(url);
     } else {
-      throw 'Could not launch $url';
+      throw Exception('Could not launch $url');
     }
   }
 }

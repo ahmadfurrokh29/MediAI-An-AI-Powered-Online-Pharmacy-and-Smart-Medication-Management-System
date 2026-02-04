@@ -14,6 +14,7 @@ import 'package:med/features/shop/screens/cart/cart.dart';
 import 'package:med/features/shop/screens/order/order.dart';
 import 'package:med/utils/constants/colors.dart';
 import 'package:med/utils/constants/sizes.dart';
+import 'package:med/data/repositories/authentication/authentication_repository.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -167,7 +168,33 @@ class SettingsScreen extends StatelessWidget {
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton(
-                      onPressed: () {},
+                      onPressed: () async {
+                        // Confirm logout with the user
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: const Text('Logout'),
+                            content: const Text(
+                              'Are you sure you want to logout?',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.of(ctx).pop(false),
+                                child: const Text('Cancel'),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.of(ctx).pop(true),
+                                child: const Text('Logout'),
+                              ),
+                            ],
+                          ),
+                        );
+
+                        if (confirm == true) {
+                          // Perform logout via the AuthenticationRepository
+                          await AuthenticationRepository.instance.logout();
+                        }
+                      },
                       child: const Text('Logout'),
                     ),
                   ), // SizedBox

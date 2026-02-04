@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "146157952487",
+    "project_id": "medi-ai-6bcb2",
+    "storage_bucket": "medi-ai-6bcb2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:146157952487:android:cb4de1b55975258d1df142",
+        "android_client_info": {
+          "package_name": "com.example.mediai"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "146157952487-f3bgulc4qukfao47v6dropuaeft0tbih.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.mediai",
+            "certificate_hash": "80fb5891e39f3113f81d7b46f8d83b4d88a33591"
+          }
+        },
+        {
+          "client_id": "146157952487-j8l2ss8q20mfi3pgus4kmlavct00l1in.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBCgqiXlTYFEJPqmflkVQbspqq5P8A2j_8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "146157952487-j8l2ss8q20mfi3pgus4kmlavct00l1in.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "146157952487-on0tc3gb2n33aqjss00dtgof35301nf3.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.mediai"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

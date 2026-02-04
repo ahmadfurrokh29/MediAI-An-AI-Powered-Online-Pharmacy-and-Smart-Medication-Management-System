@@ -35,6 +35,12 @@
   readmore: ^3.0.0
   flutter_rating_bar: ^4.0.1
   image_picker: ^1.2.1
+  #firebase
+  firebase_core: ^4.4.0
+  lottie: ^3.3.2
+  connectivity_plus: ^7.0.0
+  firebase_auth: ^6.1.4
+  cloud_firestore: ^6.1.2
 
 
  dev_dependencies:
