@@ -11,7 +11,7 @@ class MCartitem extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView.separated(
       shrinkWrap: true,
-      separatorBuilder: (_, __) => const Divider(),
+      separatorBuilder: (_, _) => const Divider(),
       itemCount: 3,
       itemBuilder: (_, index) => Column(
         children: [

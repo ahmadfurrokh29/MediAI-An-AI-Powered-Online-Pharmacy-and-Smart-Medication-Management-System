@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
 import 'package:med/common/widgets/appbar/appbar.dart';
 
 import 'package:med/features/shop/screens/cart/widgets/cart_item.dart';
@@ -8,7 +7,7 @@ import 'package:med/features/shop/screens/checkout/checkout.dart';
 import 'package:med/utils/constants/sizes.dart';
 
 class CartScreen extends StatelessWidget {
-  const CartScreen({Key? key}) : super(key: key);
+  const CartScreen({super.key});
 
   @override
   Widget build(BuildContext context) {

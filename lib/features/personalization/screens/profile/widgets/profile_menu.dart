@@ -37,7 +37,7 @@ class MProfileMenu extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-             Expanded(child: Icon(icon, size: 18)),
+            Expanded(child: Icon(icon, size: 18)),
           ],
         ),
       ),

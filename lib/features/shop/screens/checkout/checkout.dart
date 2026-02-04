@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
 import 'package:med/common/widgets/appbar/appbar.dart';
 import 'package:med/common/widgets/custom_shapes/containers/rounded_container.dart';
 import 'package:med/common/widgets/products/cart/coupon_widget.dart';
@@ -16,7 +15,7 @@ import 'package:med/utils/constants/sizes.dart';
 import 'package:med/utils/helpers/helper_functions.dart';
 
 class CheckoutScreen extends StatelessWidget {
-  const CheckoutScreen({Key? key}) : super(key: key);
+  const CheckoutScreen({super.key});
 
   @override
   Widget build(BuildContext context) {

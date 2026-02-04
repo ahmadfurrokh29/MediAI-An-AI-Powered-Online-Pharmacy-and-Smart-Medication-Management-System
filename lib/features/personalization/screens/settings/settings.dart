@@ -121,11 +121,11 @@ class SettingsScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: MSizes.spaceBtwItems),
 
-                  const MSettingsMenuTile(
-                    icon: Iconsax.document_upload,
-                    title: 'Load Data',
-                    subTitle: 'Upload Data to your Cloud Firebase',
-                  ),
+                  // const MSettingsMenuTile(
+                  //   icon: Iconsax.document_upload,
+                  //   title: 'Load Data',
+                  //   subTitle: 'Upload Data to your Cloud Firebase',
+                  // ),
 
                   MSettingsMenuTile(
                     icon: Iconsax.location,
@@ -151,17 +151,17 @@ class SettingsScreen extends StatelessWidget {
                     ),
                   ),
 
-                  MSettingsMenuTile(
-                    icon: Iconsax.image,
-                    title: 'HD Image Quality',
-                    subTitle: 'Set image quality to be seen',
-                    trailing: Switch(
-                      value: true,
-                      activeTrackColor: MColors.primary,
-                      activeThumbColor: MColors.white,
-                      onChanged: (value) {},
-                    ),
-                  ),
+                  // MSettingsMenuTile(
+                  //   icon: Iconsax.image,
+                  //   title: 'HD Image Quality',
+                  //   subTitle: 'Set image quality to be seen',
+                  //   trailing: Switch(
+                  //     value: true,
+                  //     activeTrackColor: MColors.primary,
+                  //     activeThumbColor: MColors.white,
+                  //     onChanged: (value) {},
+                  //   ),
+                  // ),
 
                   /// -- Logout Button
                   const SizedBox(height: MSizes.spaceBtwSections),
@@ -198,7 +198,7 @@ class SettingsScreen extends StatelessWidget {
                       child: const Text('Logout'),
                     ),
                   ), // SizedBox
-                  const SizedBox(height: MSizes.spaceBtwSections * 2.5),
+                  const SizedBox(height: MSizes.spaceBtwSections ),
                 ],
               ), // Column
             ), // Padding

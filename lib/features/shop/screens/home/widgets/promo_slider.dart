@@ -1,4 +1,4 @@
-import 'package:carousel_slider/carousel_slider.dart';
+ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:med/common/widgets/custom_shapes/containers/circular_container.dart';
 import 'package:med/common/widgets/images/m_rounded_image.dart';

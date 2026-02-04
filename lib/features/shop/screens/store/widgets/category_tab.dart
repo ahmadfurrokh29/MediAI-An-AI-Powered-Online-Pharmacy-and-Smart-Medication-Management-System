@@ -1,6 +1,4 @@
 
-
-
 import 'package:flutter/material.dart';
 import 'package:med/common/widgets/brands/brand_show_case.dart';
 import 'package:med/common/widgets/layouts/grid_layout.dart';

@@ -7,7 +7,7 @@ import 'package:med/utils/constants/image_strings.dart';
 import 'package:med/utils/constants/sizes.dart';
 
 class SubCategoriesScreen extends StatelessWidget {
-  const SubCategoriesScreen({Key? key}) : super(key: key);
+  const SubCategoriesScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +37,7 @@ class SubCategoriesScreen extends StatelessWidget {
                     height: 120,
                     child: ListView.separated(
                       itemCount: 4,
-                      separatorBuilder: (_, __) =>
+                      separatorBuilder: (_, _) =>
                           const SizedBox(width: MSizes.spaceBtwItems),
                       scrollDirection: Axis.horizontal,
                       itemBuilder: (context, index) =>
