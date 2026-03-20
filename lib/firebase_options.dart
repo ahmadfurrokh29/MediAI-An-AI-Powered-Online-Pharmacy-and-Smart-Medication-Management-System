@@ -53,6 +53,9 @@ class DefaultFirebaseOptions {
     projectId: 'medi-ai-6bcb2',
     authDomain: 'medi-ai-6bcb2.firebaseapp.com',
     storageBucket: 'medi-ai-6bcb2.firebasestorage.app',
+    // Web OAuth client ID from Google Cloud Console → APIs & Services → Credentials
+    // (Web client auto-created by Firebase — copy it here)
+    // e.g. clientId: '146157952487-xxxxxxxxxxxxxxxx.apps.googleusercontent.com',
   );
 
   static const FirebaseOptions android = FirebaseOptions(

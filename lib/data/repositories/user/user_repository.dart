@@ -2,9 +2,6 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:med/features/personalization/models/user_model.dart';
-import 'package:med/utils/exceptions/firebase_exceptions.dart';
-import 'package:med/utils/exceptions/format_exceptions.dart';
-import 'package:med/utils/exceptions/platform_exceptions.dart';
 
 /// Repository class for user-related operations.
 class UserRepository extends GetxController {

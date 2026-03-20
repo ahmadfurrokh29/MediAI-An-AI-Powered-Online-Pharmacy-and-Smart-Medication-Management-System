@@ -41,6 +41,8 @@
   connectivity_plus: ^7.0.0
   firebase_auth: ^6.1.4
   cloud_firestore: ^6.1.2
+  google_sign_in: ^6.1.0
+  flutter_facebook_auth: ^7.0.1
 
 
  dev_dependencies:

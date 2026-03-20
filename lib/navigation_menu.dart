@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:med/features/chatbot/chatbot_screen.dart';
 import 'package:med/features/personalization/screens/settings/settings.dart';
+import 'package:med/features/shop/controllers/wishlist_controller.dart';
 import 'package:med/features/shop/screens/home/home.dart';
 import 'package:med/features/shop/screens/store/store.dart';
 import 'package:med/utils/constants/colors.dart';
@@ -15,6 +16,8 @@ class NavigationMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     final dark = MHelperFunctions.isDarkMode(context);
     final controller = Get.put(NavigationController());
+    // Register WishlistController once so product cards anywhere can find it
+    Get.put(WishlistController());
     return Scaffold(
       bottomNavigationBar: Obx(
         () => ClipRRect(

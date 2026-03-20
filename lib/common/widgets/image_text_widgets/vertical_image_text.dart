@@ -8,12 +8,14 @@ class MVerticalImageText extends StatelessWidget {
     super.key,
     required this.image,
     required this.title,
+    this.isNetworkImage = false,
     this.textColor = MColors.white,
     this.backgroundColor,
     this.onTap,
   });
 
   final String image, title;
+  final bool isNetworkImage;
   final Color textColor;
   final Color? backgroundColor;
   final void Function()? onTap;
@@ -39,12 +41,21 @@ class MVerticalImageText extends StatelessWidget {
                 borderRadius: BorderRadius.circular(100),
               ),
               child: Center(
-                child: Image(
-                  image: AssetImage(image),
-                  fit: BoxFit.cover,
-                  height: 40,
-                  width: 40,
-                ),
+                child: isNetworkImage
+                    ? Image.network(
+                        image,
+                        fit: BoxFit.cover,
+                        height: 40,
+                        width: 40,
+                        errorBuilder: (_, __, ___) =>
+                            const Icon(Icons.image_not_supported, size: 24),
+                      )
+                    : Image(
+                        image: AssetImage(image),
+                        fit: BoxFit.cover,
+                        height: 40,
+                        width: 40,
+                      ),
               ),
             ),
             const SizedBox(height: MSizes.spaceBtwItems / 2),
