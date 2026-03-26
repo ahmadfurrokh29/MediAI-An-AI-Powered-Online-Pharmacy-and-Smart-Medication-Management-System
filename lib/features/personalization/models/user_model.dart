@@ -57,14 +57,40 @@ class UserModel {
   );
 
   /// Convert model to JSON structure for storing data in Firebase.
+  ///
+  /// Uses a single, consistent schema that both the MediAI app and the Admin
+  /// panel's [CustomerModel.fromSnapshot] can read (it tries both casings).
+  ///
+  /// Canonical shippingAddress sub-document keys:
+  ///   name, phoneNumber, street, postalCode, city, state, country
   Map<String, dynamic> toJson() {
     return {
+      // ── Identity (PascalCase — read by MediAI fromSnapshot) ─────────────
       'FirstName': firstName,
       'LastName': lastName,
       'Username': username,
       'Email': email,
       'PhoneNumber': phoneNumber,
       'ProfilePicture': profilePicture,
+
+      // ── Identity (camelCase — read by Admin CustomerModel.fromSnapshot) ──
+      'firstName': firstName,
+      'lastName': lastName,
+      'username': username,
+      'email': email,
+      'phoneNumber': phoneNumber,
+
+      // ── Role & timestamps ────────────────────────────────────────────────
+      'role': 'Customer',
+      'createdAt': Timestamp.now(),
+      'isEmailVerified': false,
+
+      // ── Customer-specific fields ─────────────────────────────────────────
+      'points': 0,
+      'orderCount': 0,
+      // addresses is a list; selectedAddressIndex points to the active one.
+      'addresses': <Map<String, dynamic>>[],
+      'selectedAddressIndex': 0,
     };
   }
 
@@ -76,11 +102,11 @@ class UserModel {
       final data = document.data()!;
       return UserModel(
         id: document.id,
-        firstName: data['FirstName'] ?? '',
-        lastName: data['LastName'] ?? '',
-        username: data['Username'] ?? '',
-        email: data['Email'] ?? '',
-        phoneNumber: data['PhoneNumber'] ?? '',
+        firstName: data['FirstName'] ?? data['firstName'] ?? '',
+        lastName: data['LastName'] ?? data['lastName'] ?? '',
+        username: data['Username'] ?? data['username'] ?? '',
+        email: data['Email'] ?? data['email'] ?? '',
+        phoneNumber: data['PhoneNumber'] ?? data['phoneNumber'] ?? '',
         profilePicture: data['ProfilePicture'] ?? '',
       );
     } else {

@@ -1,17 +1,45 @@
-
 import 'package:flutter/material.dart';
-import 'package:med/common/widgets/brands/brand_show_case.dart';
+import 'package:get/get.dart';
+import 'package:med/common/widgets/custom_shapes/containers/rounded_container.dart';
+import 'package:med/common/widgets/images/m_circular_image.dart';
 import 'package:med/common/widgets/layouts/grid_layout.dart';
 import 'package:med/common/widgets/products/product_cards/product_card_vertical.dart';
+import 'package:med/common/widgets/texts/m_brand_title_text_with_verified_icon.dart';
 import 'package:med/common/widgets/texts/section_heading.dart';
+import 'package:med/features/shop/controllers/store_controller.dart';
+import 'package:med/features/shop/screens/all_products/all_products.dart';
+import 'package:med/features/shop/screens/brand/brand_products.dart';
+import 'package:med/utils/constants/colors.dart';
+import 'package:med/utils/constants/enums.dart';
 import 'package:med/utils/constants/image_strings.dart';
 import 'package:med/utils/constants/sizes.dart';
+import 'package:med/utils/helpers/helper_functions.dart';
 
 class MCategoryTab extends StatelessWidget {
-  const MCategoryTab({super.key});
+  const MCategoryTab({
+    super.key,
+    required this.categoryId,
+    required this.categoryName,
+  });
+
+  /// Null → "View All" tab (global data).
+  final String? categoryId;
+  final String? categoryName;
 
   @override
   Widget build(BuildContext context) {
+    final dark = MHelperFunctions.isDarkMode(context);
+    final controller = StoreController.instance;
+
+    // Determine which brands / products to display
+    final List<Map<String, dynamic>> brands = categoryId != null
+        ? controller.brandsForCategory(categoryId!, limit: 2)
+        : controller.topBrandsGlobal(limit: 2);
+
+    final List<Map<String, dynamic>> youMightLike = categoryId != null
+        ? controller.topRatedForCategory(categoryName!, limit: 4)
+        : controller.topRatedGlobal(limit: 4);
+
     return ListView(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -20,21 +48,161 @@ class MCategoryTab extends StatelessWidget {
           padding: const EdgeInsets.all(MSizes.defaultSpace),
           child: Column(
             children: [
-              /// -- Brands
-              const MBrandShowcase(images: [MImages.product2, MImages.product3, MImages.product4]),
-              const MBrandShowcase(images: [MImages.product5, MImages.product6, MImages.product7]),
+              // ── Brand showcases ─────────────────────────────────────
+              ...brands.map((brand) {
+                final brandName = (brand['name'] ?? '').toString();
+                final brandImage = (brand['image'] ?? '').toString().trim();
+                final isNetwork = brandImage.startsWith('http');
+                final brandCount = brand['productCount'] ?? 0;
+
+                final products = controller.productsForBrand(
+                  brandName,
+                  limit: 3,
+                  categoryName: categoryName,
+                );
+
+                return _brandShowcase(
+                  context: context,
+                  dark: dark,
+                  brandName: brandName,
+                  brandImage: brandImage,
+                  isNetwork: isNetwork,
+                  brandCount: brandCount,
+                  products: products,
+                );
+              }),
+
               const SizedBox(height: MSizes.spaceBtwItems),
 
-              /// -- Products
-              MSectionHeading(title: 'You might like', onPressed: () {}),
+              // ── You might like ──────────────────────────────────────
+              MSectionHeading(
+                title: 'You might like',
+                onPressed: () => Get.to(
+                  () => AllProducts(
+                    title: categoryName != null
+                        ? 'Featured in $categoryName'
+                        : 'Featured Products',
+                    products: categoryId != null
+                        ? controller.featuredForCategory(categoryName!)
+                        : controller.featuredGlobal(),
+                  ),
+                ),
+              ),
               const SizedBox(height: MSizes.spaceBtwItems),
 
-              MGridLayout(itemCount: 4, itemBuilder: (_, index) => const MProductCardVertical()),
+              if (youMightLike.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  child: Text('No products found'),
+                )
+              else
+                MGridLayout(
+                  itemCount: youMightLike.length,
+                  itemBuilder: (_, index) =>
+                      MProductCardVertical(productData: youMightLike[index]),
+                ),
               const SizedBox(height: MSizes.spaceBtwSections),
             ],
-          ), // Column
-        ), // Padding 
+          ),
+        ),
       ],
-    ); // ListView
+    );
+  }
+
+  Widget _brandShowcase({
+    required BuildContext context,
+    required bool dark,
+    required String brandName,
+    required String brandImage,
+    required bool isNetwork,
+    required int brandCount,
+    required List<Map<String, dynamic>> products,
+  }) {
+    return GestureDetector(
+      onTap: () => Get.to(
+        () => BrandProducts(
+          brandName: brandName,
+          brandImage: brandImage,
+          brandProductCount: brandCount,
+          categoryName: categoryName,
+        ),
+      ),
+      child: MRoundedContainer(
+        showBorder: true,
+        borderColor: MColors.darkGrey,
+        backgroundColor: Colors.transparent,
+        padding: const EdgeInsets.all(MSizes.md),
+        margin: const EdgeInsets.only(bottom: MSizes.spaceBtwItems),
+        child: Column(
+          children: [
+            // Brand card header
+            Row(
+              children: [
+                Flexible(
+                  child: MCircularImage(
+                    image: isNetwork ? brandImage : MImages.medIcon,
+                    isNetworkImage: isNetwork,
+                    backgroundColor: Colors.transparent,
+                    height: 40,
+                    width: 40,
+                  ),
+                ),
+                const SizedBox(width: MSizes.spaceBtwItems / 2),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      MBrandTitleTextWithVerifiedIcon(
+                        title: brandName,
+                        brandTextSize: TextSizes.large,
+                      ),
+                      Text(
+                        '$brandCount Products',
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.labelMedium,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: MSizes.spaceBtwItems),
+
+            // Top 3 product images
+            if (products.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: Text('No products yet'),
+              )
+            else
+              Row(
+                children: products.map((p) {
+                  final img = (p['image'] ?? '').toString().trim();
+                  final isNet = img.startsWith('http');
+                  return Expanded(
+                    child: MRoundedContainer(
+                      height: 100,
+                      padding: const EdgeInsets.all(MSizes.md),
+                      margin: const EdgeInsets.only(right: MSizes.sm),
+                      backgroundColor: dark
+                          ? MColors.darkerGrey
+                          : MColors.light,
+                      child: isNet
+                          ? Image.network(
+                              img,
+                              fit: BoxFit.contain,
+                              errorBuilder: (_, __, ___) =>
+                                  const Icon(Icons.medication),
+                            )
+                          : const Icon(Icons.medication, size: 40),
+                    ),
+                  );
+                }).toList(),
+              ),
+          ],
+        ),
+      ),
+    );
   }
 }

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:med/features/chatbot/chatbot_screen.dart';
+import 'package:med/features/personalization/controllers/user_controller.dart';
 import 'package:med/features/personalization/screens/settings/settings.dart';
+import 'package:med/features/shop/controllers/cart_controller.dart';
 import 'package:med/features/shop/controllers/wishlist_controller.dart';
 import 'package:med/features/shop/screens/home/home.dart';
 import 'package:med/features/shop/screens/store/store.dart';
@@ -18,6 +20,10 @@ class NavigationMenu extends StatelessWidget {
     final controller = Get.put(NavigationController());
     // Register WishlistController once so product cards anywhere can find it
     Get.put(WishlistController());
+    // Register CartController once
+    Get.put(CartController());
+    // Register UserController once so profile/tile widgets can find it
+    Get.put(UserController());
     return Scaffold(
       bottomNavigationBar: Obx(
         () => ClipRRect(

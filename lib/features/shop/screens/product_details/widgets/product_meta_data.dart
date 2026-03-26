@@ -8,68 +8,92 @@ import 'package:med/utils/constants/enums.dart';
 import 'package:med/utils/constants/sizes.dart';
 
 class MProductMetaData extends StatelessWidget {
-  const MProductMetaData({super.key});
+  const MProductMetaData({super.key, required this.productData});
+
+  final Map<String, dynamic> productData;
 
   @override
   Widget build(BuildContext context) {
+    final double price = (productData['price'] ?? 0).toDouble();
+    final double salePrice = (productData['salePrice'] ?? 0).toDouble();
+    final String title = (productData['name'] ?? '').toString();
+    final String brand = (productData['brandName'] ?? '').toString();
+    final int stock = ((productData['stock'] ?? 0) as num).toInt();
+    final bool inStock = stock > 0;
+
+    // Effective display price and discount %
+    final double effectivePrice = (salePrice > 0 && salePrice < price)
+        ? salePrice
+        : price;
+    final int discountPercent =
+        (salePrice > 0 && price > 0 && salePrice < price)
+        ? (((price - salePrice) / price) * 100).round()
+        : 0;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        /// Price & Sale Price
+        /// Price row
         Row(
           children: [
-            /// Sale Tag
-            MRoundedContainer(
-              radius: MSizes.sm,
-              // ignore: deprecated_member_use
-              backgroundColor: MColors.secondary.withOpacity(0.8),
-              padding: const EdgeInsets.symmetric(
-                horizontal: MSizes.sm,
-                vertical: MSizes.xs,
+            if (discountPercent > 0) ...[
+              MRoundedContainer(
+                radius: MSizes.sm,
+                // ignore: deprecated_member_use
+                backgroundColor: MColors.secondary.withOpacity(0.8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: MSizes.sm,
+                  vertical: MSizes.xs,
+                ),
+                child: Text(
+                  '$discountPercent%',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.labelLarge!.apply(color: MColors.black),
+                ),
               ),
-              child: Text(
-                '25%',
-                style: Theme.of(
-                  context,
-                ).textTheme.labelLarge!.apply(color: MColors.black),
+              const SizedBox(width: MSizes.spaceBtwItems),
+              Text(
+                'Rs ${price.toStringAsFixed(0)}',
+                style: Theme.of(context).textTheme.titleSmall!.apply(
+                  decoration: TextDecoration.lineThrough,
+                ),
               ),
+              const SizedBox(width: MSizes.spaceBtwItems),
+            ],
+            MProductPriceText(
+              price: effectivePrice.toStringAsFixed(0),
+              isLarge: true,
             ),
-            const SizedBox(width: MSizes.spaceBtwItems),
-
-            /// Price
-            Text(
-              'Rs 250',
-              style: Theme.of(context).textTheme.titleSmall!.apply(
-                decoration: TextDecoration.lineThrough,
-              ),
-            ),
-            const SizedBox(width: MSizes.spaceBtwItems),
-            const MProductPriceText(price: '175', isLarge: true),
           ],
         ),
         const SizedBox(height: MSizes.spaceBtwItems / 1.5),
 
         /// Title
-        const MProductTitleText(title: 'Amoxicillin'),
+        MProductTitleText(title: title),
         const SizedBox(height: MSizes.spaceBtwItems / 1.5),
 
-        /// Stock Status
+        /// Stock
         Row(
           children: [
             const MProductTitleText(title: 'Status'),
             const SizedBox(width: MSizes.spaceBtwItems),
-            Text('In Stock', style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              inStock ? 'In Stock ($stock)' : 'Out of Stock',
+              style: Theme.of(context).textTheme.titleMedium!.apply(
+                color: inStock ? MColors.primary : Colors.red,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: MSizes.spaceBtwItems / 1.5),
 
-        //Brand
-        const MBrandTitleTextWithVerifiedIcon(
-          title: 'GlaxoSmithKline (GSK)',
-          brandTextSize: TextSizes.medium,
-        ),
-
         /// Brand
+        if (brand.isNotEmpty)
+          MBrandTitleTextWithVerifiedIcon(
+            title: brand,
+            brandTextSize: TextSizes.medium,
+          ),
       ],
     );
   }

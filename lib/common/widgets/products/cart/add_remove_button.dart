@@ -6,14 +6,23 @@ import 'package:med/utils/constants/sizes.dart';
 import 'package:med/utils/helpers/helper_functions.dart';
 
 class MProductQuantityWithAddRemoveButton extends StatelessWidget {
-  const MProductQuantityWithAddRemoveButton({super.key});
+  const MProductQuantityWithAddRemoveButton({
+    super.key,
+    required this.quantity,
+    this.onAdd,
+    this.onRemove,
+  });
+
+  final int quantity;
+  final VoidCallback? onAdd;
+  final VoidCallback? onRemove;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        ///add and remove buttons
+        ///remove button
         MCircularIcon(
           icon: Iconsax.minus,
           width: 32,
@@ -25,10 +34,12 @@ class MProductQuantityWithAddRemoveButton extends StatelessWidget {
           backgroundColor: MHelperFunctions.isDarkMode(context)
               ? MColors.darkerGrey
               : MColors.light,
+          onPressed: onRemove,
         ),
         const SizedBox(width: MSizes.spaceBtwItems),
-        Text('2', style: Theme.of(context).textTheme.bodyMedium),
+        Text('$quantity', style: Theme.of(context).textTheme.bodyMedium),
         const SizedBox(width: MSizes.spaceBtwItems),
+        ///add button
         MCircularIcon(
           icon: Iconsax.add,
           width: 32,
@@ -36,6 +47,7 @@ class MProductQuantityWithAddRemoveButton extends StatelessWidget {
           size: MSizes.md,
           color: MColors.white,
           backgroundColor: MColors.primary,
+          onPressed: onAdd,
         ),
       ],
     );

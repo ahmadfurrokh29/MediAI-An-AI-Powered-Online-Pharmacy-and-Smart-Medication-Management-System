@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:med/common/widgets/custom_shapes/containers/search_container.dart';
 import 'package:med/common/widgets/layouts/grid_layout.dart';
 import 'package:med/common/widgets/products/product_cards/product_card_vertical.dart';
+import 'package:med/common/widgets/products/search/product_search_sheet.dart';
 import 'package:med/common/widgets/texts/section_heading.dart';
 import 'package:med/features/shop/controllers/home_controller.dart';
 import 'package:med/features/shop/screens/all_products/all_products.dart';
@@ -35,7 +36,7 @@ class HomeScreen extends StatelessWidget {
 
                   // Req #2: Search bar — opens product search bottom sheet
                   GestureDetector(
-                    onTap: () => _openSearchSheet(context, controller),
+                    onTap: () => openProductSearchSheet(context),
                     child: const MSearchContainer(text: 'Search in Store'),
                   ),
 
@@ -68,10 +69,15 @@ class HomeScreen extends StatelessWidget {
                   const MPromoSlider(),
                   const SizedBox(height: MSizes.spaceBtwItems),
 
-                  // Req #5: Recommended products from Firestore
+                  // Req #5: Recommended products from Firestore (home shows top 4)
                   MSectionHeading(
                     title: 'Popular Products',
-                    onPressed: () => Get.to(() => const AllProducts()),
+                    onPressed: () => Get.to(
+                      () => AllProducts(
+                        title: 'Popular Products',
+                        products: controller.recommendedProducts.toList(),
+                      ),
+                    ),
                   ),
                   const SizedBox(height: MSizes.spaceBtwItems),
 
@@ -96,10 +102,12 @@ class HomeScreen extends StatelessWidget {
                       );
                     }
 
+                    // Show only the first 4 on the home screen
+                    final display = products.take(4).toList();
                     return MGridLayout(
-                      itemCount: products.length,
+                      itemCount: display.length,
                       itemBuilder: (_, index) =>
-                          MProductCardVertical(productData: products[index]),
+                          MProductCardVertical(productData: display[index]),
                     );
                   }),
                 ],
@@ -108,108 +116,6 @@ class HomeScreen extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-
-  // Req #2: bottom sheet with live search across all products
-  void _openSearchSheet(BuildContext context, HomeController controller) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) {
-        return DraggableScrollableSheet(
-          expand: false,
-          initialChildSize: 0.85,
-          maxChildSize: 0.95,
-          minChildSize: 0.5,
-          builder: (_, scrollCtrl) {
-            return Padding(
-              padding: EdgeInsets.only(
-                left: 16,
-                right: 16,
-                top: 16,
-                bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
-              ),
-              child: Column(
-                children: [
-                  // Search field
-                  TextField(
-                    autofocus: true,
-                    onChanged: controller.searchProducts,
-                    decoration: InputDecoration(
-                      hintText: 'Search products, brands, categories…',
-                      prefixIcon: const Icon(Icons.search),
-                      suffixIcon: IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () {
-                          controller.searchResults.clear();
-                          Navigator.pop(ctx);
-                        },
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Results
-                  Expanded(
-                    child: Obx(() {
-                      if (controller.isSearching.value) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-                      if (controller.searchResults.isEmpty) {
-                        return const Center(
-                          child: Text('Start typing to search…'),
-                        );
-                      }
-                      return ListView.separated(
-                        controller: scrollCtrl,
-                        itemCount: controller.searchResults.length,
-                        separatorBuilder: (_, __) => const Divider(height: 1),
-                        itemBuilder: (_, i) {
-                          final p = controller.searchResults[i];
-                          final image = (p['image'] ?? '').toString();
-                          final isNetwork = image.startsWith('http');
-                          return ListTile(
-                            leading: ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: isNetwork
-                                  ? Image.network(
-                                      image,
-                                      width: 48,
-                                      height: 48,
-                                      fit: BoxFit.cover,
-                                    )
-                                  : const Icon(Icons.medication, size: 40),
-                            ),
-                            title: Text((p['name'] ?? '').toString()),
-                            subtitle: Text(
-                              '${p['brandName'] ?? ''} • ${p['categoryName'] ?? ''}',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            trailing: Text(
-                              'Rs ${(p['price'] ?? 0).toStringAsFixed(0)}',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          );
-                        },
-                      );
-                    }),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
     );
   }
 }

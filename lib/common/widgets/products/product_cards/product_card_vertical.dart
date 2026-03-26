@@ -8,6 +8,7 @@ import 'package:med/common/widgets/images/m_rounded_image.dart';
 import 'package:med/common/widgets/texts/m_brand_title_text_with_verified_icon.dart';
 import 'package:med/common/widgets/texts/product_price_text.dart';
 import 'package:med/common/widgets/texts/product_title_text.dart';
+import 'package:med/features/shop/controllers/cart_controller.dart';
 import 'package:med/features/shop/controllers/wishlist_controller.dart';
 import 'package:med/features/shop/screens/product_details/product_details.dart';
 import 'package:med/utils/constants/colors.dart';
@@ -71,7 +72,7 @@ class MProductCardVertical extends StatelessWidget {
     }
 
     return GestureDetector(
-      onTap: () => Get.to(() => const MProductDetail()),
+      onTap: () => Get.to(() => MProductDetail(productData: productData)),
       child: Container(
         width: 180,
         padding: const EdgeInsets.all(1),
@@ -157,19 +158,26 @@ class MProductCardVertical extends StatelessWidget {
                 ),
 
                 ///add to cart button
-                Container(
-                  decoration: const BoxDecoration(
-                    color: MColors.dark,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(MSizes.cardRadiusMd),
-                      bottomRight: Radius.circular(MSizes.productImageRadius),
+                GestureDetector(
+                  onTap: () {
+                    if (productData != null) {
+                      CartController.instance.addToCart(productData!);
+                    }
+                  },
+                  child: Container(
+                    decoration: const BoxDecoration(
+                      color: MColors.dark,
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(MSizes.cardRadiusMd),
+                        bottomRight: Radius.circular(MSizes.productImageRadius),
+                      ),
                     ),
-                  ),
-                  child: const SizedBox(
-                    width: MSizes.iconLg * 1.2,
-                    height: MSizes.iconLg * 1.2,
-                    child: Center(
-                      child: Icon(Iconsax.add5, color: MColors.white),
+                    child: const SizedBox(
+                      width: MSizes.iconLg * 1.2,
+                      height: MSizes.iconLg * 1.2,
+                      child: Center(
+                        child: Icon(Iconsax.add5, color: MColors.white),
+                      ),
                     ),
                   ),
                 ),

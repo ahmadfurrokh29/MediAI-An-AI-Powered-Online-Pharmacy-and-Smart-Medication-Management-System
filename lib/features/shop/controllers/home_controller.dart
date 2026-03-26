@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 
 class HomeController extends GetxController {
@@ -49,8 +50,8 @@ class HomeController extends GetxController {
         _fetchActiveBanners(),
         _fetchRecommendedProducts(),
       ]);
-    } catch (_) {
-      // individual sections show their own empty state
+    } catch (e) {
+      debugPrint('⚠️ _loadHomeData error: $e');
     } finally {
       isLoading.value = false;
     }
@@ -156,23 +157,55 @@ class HomeController extends GetxController {
 
       recommendedProducts.value = snap.docs
           .where((d) => (d.data()['IsActive'] ?? true) == true)
-          .map((d) {
-            final m = d.data();
-            final imgs = (m['Images'] is List)
-                ? List<String>.from(m['Images'] as List)
-                : <String>[];
-            return {
-              'id': d.id,
-              'name': (m['Name'] ?? '').toString(),
-              'brandName': (m['BrandName'] ?? '').toString(),
-              'price': (m['Price'] ?? 0).toDouble(),
-              'salePrice': (m['SalePrice'] ?? 0).toDouble(),
-              'image': imgs.isNotEmpty ? imgs.first : '',
-              'stock': (m['Stock'] ?? 0) as int,
-            };
-          })
+          .map((d) => _productDocToMap(d))
           .toList();
-    } catch (_) {}
+    } catch (e) {
+      // Log it so the user can actually see what went wrong
+      debugPrint('⚠️ _fetchRecommendedProducts error: $e');
+    }
+  }
+
+  /// Converts a Firestore product document into the canonical map used
+  /// by product cards AND the product detail page.
+  static Map<String, dynamic> _productDocToMap(
+    QueryDocumentSnapshot<Map<String, dynamic>> d,
+  ) {
+    final m = d.data();
+    final imgs = (m['Images'] is List)
+        ? List<String>.from((m['Images'] as List).map((e) => e.toString()))
+        : <String>[];
+    return {
+      'id': d.id,
+      'name': (m['Name'] ?? '').toString(),
+      'brandName': (m['BrandName'] ?? '').toString(),
+      'categoryName': (m['CategoryName'] ?? '').toString(),
+      'subcategoryName': (m['SubcategoryName'] ?? '').toString(),
+      'description': (m['Description'] ?? '').toString(),
+      'price': _toDouble(m['Price']),
+      'salePrice': _toDouble(m['SalePrice']),
+      // 'image' → first image, used by product cards as thumbnail
+      'image': imgs.isNotEmpty ? imgs.first : '',
+      // 'images' → full list, used by the detail page image slider
+      'images': imgs,
+      'stock': _toInt(m['Stock']),
+      'avgRating': _toDouble(m['avgRating']),
+      'reviewCount': _toInt(m['reviewCount']),
+    };
+  }
+
+  /// Safely convert any Firestore value to double (handles int, double, String, null)
+  static double _toDouble(dynamic v) {
+    if (v == null) return 0.0;
+    if (v is num) return v.toDouble();
+    return double.tryParse(v.toString()) ?? 0.0;
+  }
+
+  /// Safely convert any Firestore value to int (handles int, double, String, null)
+  static int _toInt(dynamic v) {
+    if (v == null) return 0;
+    if (v is int) return v;
+    if (v is num) return v.toInt();
+    return int.tryParse(v.toString()) ?? 0;
   }
 
   // ── Req #2 ────────────────────────────────────────────────────────────────
@@ -190,29 +223,14 @@ class HomeController extends GetxController {
           .get();
 
       final key = q.toLowerCase();
-      searchResults.value = snap.docs
-          .map((d) {
-            final m = d.data();
-            final imgs = (m['Images'] is List)
-                ? List<String>.from(m['Images'] as List)
-                : <String>[];
-            return {
-              'id': d.id,
-              'name': (m['Name'] ?? '').toString(),
-              'brandName': (m['BrandName'] ?? '').toString(),
-              'categoryName': (m['CategoryName'] ?? '').toString(),
-              'subcategoryName': (m['SubcategoryName'] ?? '').toString(),
-              'price': (m['Price'] ?? 0).toDouble(),
-              'image': imgs.isNotEmpty ? imgs.first : '',
-            };
-          })
-          .where((p) {
-            final blob =
-                '${p['name']} ${p['brandName']} ${p['categoryName']} ${p['subcategoryName']}'
-                    .toLowerCase();
-            return blob.contains(key);
-          })
-          .toList();
+      searchResults.value = snap.docs.map((d) => _productDocToMap(d)).where((
+        p,
+      ) {
+        final blob =
+            '${p['name']} ${p['brandName']} ${p['categoryName']} ${p['subcategoryName']}'
+                .toLowerCase();
+        return blob.contains(key);
+      }).toList();
     } catch (_) {
       searchResults.clear();
     } finally {

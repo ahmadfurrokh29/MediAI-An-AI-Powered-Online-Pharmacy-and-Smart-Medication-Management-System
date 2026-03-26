@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
+import 'package:med/data/repositories/user/user_repository.dart';
 import 'package:med/features/authentication/screens/login/login.dart';
 import 'package:med/features/authentication/screens/onboarding/onboarding.dart';
 import 'package:med/features/authentication/screens/signup/verify_email.dart';
@@ -47,6 +48,18 @@ class AuthenticationRepository extends GetxController {
         return;
       }
       if (refreshedUser.emailVerified) {
+        // Ensure the Firestore document has role:'Customer' and createdAt set.
+        // This backfills existing accounts (e.g. ibbirhymes@gmail.com) that
+        // were created before the role field was introduced, and self-heals
+        // any future account that is missing the field.
+        final userRepo = Get.put(UserRepository());
+        await userRepo.ensureCustomerRole(
+          refreshedUser.uid,
+          email: refreshedUser.email,
+        );
+        // Sync the emailVerified flag into Firestore so the admin panel shows it.
+        await userRepo.updateEmailVerifiedStatus(refreshedUser.uid, true);
+
         Get.offAll(() => const NavigationMenu());
       } else {
         Get.offAll(() => VerifyEmailScreen(email: refreshedUser.email));

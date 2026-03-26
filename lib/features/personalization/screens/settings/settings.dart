@@ -7,6 +7,7 @@ import 'package:med/common/widgets/list_tiles/settings_menu_tile.dart';
 import 'package:med/common/widgets/list_tiles/user_profile_tile.dart';
 import 'package:med/common/widgets/texts/section_heading.dart';
 import 'package:med/features/personalization/screens/address/address.dart';
+import 'package:med/features/personalization/screens/bank_account/bank_account.dart';
 import 'package:med/features/personalization/screens/mymedicalhistory/mymedicalhistory.dart';
 import 'package:med/features/personalization/screens/mymedication/my_medication.dart';
 import 'package:med/features/personalization/screens/profile/profile.dart';
@@ -92,7 +93,7 @@ class SettingsScreen extends StatelessWidget {
                     icon: Iconsax.bank,
                     title: 'Bank Account',
                     subTitle: 'Withdraw balance to registered bank account',
-                    onTap: () {},
+                    onTap: () => Get.to(() => const BankAccountScreen()),
                   ),
                   MSettingsMenuTile(
                     icon: Iconsax.discount_shape,

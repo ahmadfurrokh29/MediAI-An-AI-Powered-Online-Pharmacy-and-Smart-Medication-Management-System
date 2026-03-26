@@ -3,14 +3,13 @@ import 'package:get/get.dart';
 import 'package:med/common/widgets/appbar/appbar.dart';
 import 'package:med/common/widgets/custom_shapes/containers/rounded_container.dart';
 import 'package:med/common/widgets/products/cart/coupon_widget.dart';
-import 'package:med/common/widgets/success_screen/success_screen.dart';
+import 'package:med/features/shop/controllers/cart_controller.dart';
+import 'package:med/features/shop/controllers/order_controller.dart';
 import 'package:med/features/shop/screens/cart/widgets/cart_item.dart';
 import 'package:med/features/shop/screens/checkout/widgets/billing_address_section.dart';
 import 'package:med/features/shop/screens/checkout/widgets/billing_amount_section.dart';
 import 'package:med/features/shop/screens/checkout/widgets/billing_payment_section.dart';
-import 'package:med/navigation_menu.dart';
 import 'package:med/utils/constants/colors.dart';
-import 'package:med/utils/constants/image_strings.dart';
 import 'package:med/utils/constants/sizes.dart';
 import 'package:med/utils/helpers/helper_functions.dart';
 
@@ -20,6 +19,10 @@ class CheckoutScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dark = MHelperFunctions.isDarkMode(context);
+    // Ensure OrderController is available
+    Get.put(OrderController());
+    final cart = CartController.instance;
+
     return Scaffold(
       appBar: MAppBar(
         title: Text(
@@ -30,23 +33,23 @@ class CheckoutScreen extends StatelessWidget {
       ),
       body: SingleChildScrollView(
         child: Padding(
-          padding: EdgeInsets.all(MSizes.defaultSpace),
+          padding: const EdgeInsets.all(MSizes.defaultSpace),
           child: Column(
             children: [
-              /// Items in Cart
+              /// Items in Cart (read-only)
               MCartitem(showAddRemoveButton: false),
-              SizedBox(height: MSizes.spaceBtwSections),
+              const SizedBox(height: MSizes.spaceBtwSections),
 
-              ///-- Coupoun Code Section --///
-              MCouponCode(),
-              SizedBox(height: MSizes.spaceBtwSections),
+              /// Coupon Code Section
+              const MCouponCode(),
+              const SizedBox(height: MSizes.spaceBtwSections),
 
-              ///-- Billing Details Section --///
+              /// Billing Details Section
               MRoundedContainer(
-                padding: EdgeInsets.all(MSizes.md),
+                padding: const EdgeInsets.all(MSizes.md),
                 showBorder: true,
                 backgroundColor: dark ? MColors.black : MColors.white,
-                child: Column(
+                child: const Column(
                   children: [
                     /// Pricing
                     MBillingAmountSection(),
@@ -70,18 +73,25 @@ class CheckoutScreen extends StatelessWidget {
         ),
       ),
       bottomNavigationBar: Padding(
-        padding: EdgeInsets.all(MSizes.defaultSpace),
-        child: ElevatedButton(
-          onPressed: () => Get.to(
-            () => SuccessScreen(
-              image: MImages.staticSuccessIllustration,
-              title: 'Payment Success',
-              subTitle: 'Your Item Will Be Shipped Soon!!',
-              onPressed: () => Get.offAll(() => const NavigationMenu()),
-            ),
-          ),
-          child: Text('Checkout Rs 391'),
-        ),
+        padding: const EdgeInsets.all(MSizes.defaultSpace),
+        child: Obx(() {
+          final orderCtrl = OrderController.instance;
+          final isPlacing = orderCtrl.isLoading.value;
+          final isEmpty = cart.cartItems.isEmpty;
+          final total = cart.totalAmount;
+          return ElevatedButton(
+            onPressed: isPlacing || isEmpty
+                ? null
+                : () => orderCtrl.placeOrder(),
+            child: isPlacing
+                ? const SizedBox(
+                    height: 18,
+                    width: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  )
+                : Text('Place Order  Rs ${total.toStringAsFixed(0)}'),
+          );
+        }),
       ),
     );
   }

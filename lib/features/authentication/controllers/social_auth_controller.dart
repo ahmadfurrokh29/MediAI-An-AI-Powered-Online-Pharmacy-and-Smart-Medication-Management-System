@@ -22,8 +22,8 @@ class SocialAuthController extends GetxController {
         MImages.deliveredEmailIllustration,
       );
 
-      final userCredential =
-          await AuthenticationRepository.instance.signInWithGoogle();
+      final userCredential = await AuthenticationRepository.instance
+          .signInWithGoogle();
 
       await _saveUserToFirestoreIfNew(userCredential);
 
@@ -31,19 +31,25 @@ class SocialAuthController extends GetxController {
       AuthenticationRepository.instance.screenRedirect();
     } on MFirebaseAuthException catch (e) {
       MFullScreenLoader.stopLoading();
-      MLoaders.errorSnackBar(title: 'Google Sign-In Failed', message: e.message);
+      MLoaders.errorSnackBar(
+        title: 'Google Sign-In Failed',
+        message: e.message,
+      );
     } on MFirebaseException catch (e) {
       MFullScreenLoader.stopLoading();
-      MLoaders.errorSnackBar(title: 'Google Sign-In Failed', message: e.message);
+      MLoaders.errorSnackBar(
+        title: 'Google Sign-In Failed',
+        message: e.message,
+      );
     } on MPlatformException catch (e) {
       MFullScreenLoader.stopLoading();
-      MLoaders.errorSnackBar(title: 'Google Sign-In Failed', message: e.message);
+      MLoaders.errorSnackBar(
+        title: 'Google Sign-In Failed',
+        message: e.message,
+      );
     } catch (e) {
       MFullScreenLoader.stopLoading();
-      MLoaders.errorSnackBar(
-        title: 'Oh Snap!',
-        message: e.toString(),
-      );
+      MLoaders.errorSnackBar(title: 'Oh Snap!', message: e.toString());
     }
   }
 
@@ -56,8 +62,8 @@ class SocialAuthController extends GetxController {
         MImages.deliveredEmailIllustration,
       );
 
-      final userCredential =
-          await AuthenticationRepository.instance.signInWithFacebook();
+      final userCredential = await AuthenticationRepository.instance
+          .signInWithFacebook();
 
       await _saveUserToFirestoreIfNew(userCredential);
 
@@ -65,44 +71,65 @@ class SocialAuthController extends GetxController {
       AuthenticationRepository.instance.screenRedirect();
     } on MFirebaseAuthException catch (e) {
       MFullScreenLoader.stopLoading();
-      MLoaders.errorSnackBar(title: 'Facebook Sign-In Failed', message: e.message);
+      MLoaders.errorSnackBar(
+        title: 'Facebook Sign-In Failed',
+        message: e.message,
+      );
     } on MFirebaseException catch (e) {
       MFullScreenLoader.stopLoading();
-      MLoaders.errorSnackBar(title: 'Facebook Sign-In Failed', message: e.message);
+      MLoaders.errorSnackBar(
+        title: 'Facebook Sign-In Failed',
+        message: e.message,
+      );
     } on MPlatformException catch (e) {
       MFullScreenLoader.stopLoading();
-      MLoaders.errorSnackBar(title: 'Facebook Sign-In Failed', message: e.message);
+      MLoaders.errorSnackBar(
+        title: 'Facebook Sign-In Failed',
+        message: e.message,
+      );
     } catch (e) {
       MFullScreenLoader.stopLoading();
-      MLoaders.errorSnackBar(
-        title: 'Oh Snap!',
-        message: e.toString(),
-      );
+      MLoaders.errorSnackBar(title: 'Oh Snap!', message: e.toString());
     }
   }
 
   // ─── Helpers ─────────────────────────────────────────────────────────────
 
   /// Create a Firestore user document only on first sign-in.
+  /// For returning social users, ensure role/createdAt are patched if missing.
   Future<void> _saveUserToFirestoreIfNew(UserCredential userCredential) async {
     if (userCredential.user == null) return;
-    final isNew = userCredential.additionalUserInfo?.isNewUser ?? false;
-    if (!isNew) return; // existing user – no need to create document again
-
     final firebaseUser = userCredential.user!;
-    final nameParts = UserModel.nameParts(firebaseUser.displayName ?? '');
-    final username = UserModel.generateUsername(firebaseUser.displayName ?? '');
+    final userRepo = Get.put(UserRepository());
 
-    final newUser = UserModel(
-      id: firebaseUser.uid,
-      firstName: nameParts.isNotEmpty ? nameParts[0] : '',
-      lastName: nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '',
-      username: username,
-      email: firebaseUser.email ?? '',
-      phoneNumber: firebaseUser.phoneNumber ?? '',
-      profilePicture: firebaseUser.photoURL ?? '',
-    );
+    final isNew = userCredential.additionalUserInfo?.isNewUser ?? false;
+    if (isNew) {
+      // Brand-new social account — create the full document.
+      final nameParts = UserModel.nameParts(firebaseUser.displayName ?? '');
+      final username = UserModel.generateUsername(
+        firebaseUser.displayName ?? '',
+      );
 
-    await Get.put(UserRepository()).saveUserRecord(newUser);
+      final newUser = UserModel(
+        id: firebaseUser.uid,
+        firstName: nameParts.isNotEmpty ? nameParts[0] : '',
+        lastName: nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '',
+        username: username,
+        email: firebaseUser.email ?? '',
+        phoneNumber: firebaseUser.phoneNumber ?? '',
+        profilePicture: firebaseUser.photoURL ?? '',
+      );
+
+      await userRepo.saveUserRecord(newUser);
+    } else {
+      // Returning social user — backfill role/createdAt if missing.
+      await userRepo.ensureCustomerRole(
+        firebaseUser.uid,
+        email: firebaseUser.email,
+      );
+    }
+
+    // Always sync email-verified status for social sign-ins (email is pre-verified).
+    await userRepo.updateEmailVerifiedStatus(firebaseUser.uid, true);
   }
 }

@@ -57,7 +57,15 @@ class MHomeCategories extends StatelessWidget {
               title: (cat['name'] as String).isEmpty
                   ? 'Category'
                   : cat['name'] as String,
-              onTap: () => Get.to(() => const SubCategoriesScreen()),
+              onTap: () => Get.to(
+                () => SubCategoriesScreen(
+                  categoryId: cat['id'] as String,
+                  categoryName: (cat['name'] as String).isEmpty
+                      ? 'Category'
+                      : cat['name'] as String,
+                  categoryBannerUrl: cat['image'] as String?,
+                ),
+              ),
             );
           },
         );
