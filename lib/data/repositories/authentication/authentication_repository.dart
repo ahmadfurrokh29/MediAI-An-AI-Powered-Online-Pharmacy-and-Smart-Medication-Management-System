@@ -152,6 +152,45 @@ class AuthenticationRepository extends GetxController {
   }
 
   /// [EmailAuthentication] - FORGET PASSWORD
+  Future<void> sendPasswordResetEmail(String email) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+    } on FirebaseAuthException catch (e) {
+      throw MFirebaseAuthException(e.code);
+    } on FirebaseException catch (e) {
+      throw MFirebaseException(e.code);
+    } on FormatException catch (_) {
+      throw const MFormatException();
+    } on PlatformException catch (e) {
+      throw MPlatformException(e.code);
+    } catch (e) {
+      throw Exception('Something went wrong. Please try again');
+    }
+  }
+
+  /// [ReAuthenticate] - Re-authenticate user with email & password
+  Future<void> reAuthenticateWithEmailAndPassword(
+    String email,
+    String password,
+  ) async {
+    try {
+      final credential = EmailAuthProvider.credential(
+        email: email,
+        password: password,
+      );
+      await _auth.currentUser!.reauthenticateWithCredential(credential);
+    } on FirebaseAuthException catch (e) {
+      throw MFirebaseAuthException(e.code);
+    } on FirebaseException catch (e) {
+      throw MFirebaseException(e.code);
+    } on FormatException catch (_) {
+      throw const MFormatException();
+    } on PlatformException catch (e) {
+      throw MPlatformException(e.code);
+    } catch (e) {
+      throw Exception('Something went wrong. Please try again');
+    }
+  }
 
   /* --------------------------- Federated identity & Social Sign-in --------------------------- */
 

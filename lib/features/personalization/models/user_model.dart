@@ -11,6 +11,8 @@ class UserModel {
   final String email;
   String phoneNumber;
   String profilePicture;
+  String gender;
+  String dateOfBirth;
 
   /// Constructor for UserModel.
   UserModel({
@@ -21,6 +23,8 @@ class UserModel {
     required this.email,
     required this.phoneNumber,
     required this.profilePicture,
+    this.gender = '',
+    this.dateOfBirth = '',
   });
 
   /// Helper function to get the full name.
@@ -54,6 +58,8 @@ class UserModel {
     email: '',
     phoneNumber: '',
     profilePicture: '',
+    gender: '',
+    dateOfBirth: '',
   );
 
   /// Convert model to JSON structure for storing data in Firebase.
@@ -65,20 +71,15 @@ class UserModel {
   ///   name, phoneNumber, street, postalCode, city, state, country
   Map<String, dynamic> toJson() {
     return {
-      // ── Identity (PascalCase — read by MediAI fromSnapshot) ─────────────
+      // ── Identity (PascalCase — canonical keys for MediAI) ───────────────
       'FirstName': firstName,
       'LastName': lastName,
       'Username': username,
       'Email': email,
       'PhoneNumber': phoneNumber,
       'ProfilePicture': profilePicture,
-
-      // ── Identity (camelCase — read by Admin CustomerModel.fromSnapshot) ──
-      'firstName': firstName,
-      'lastName': lastName,
-      'username': username,
-      'email': email,
-      'phoneNumber': phoneNumber,
+      'Gender': gender,
+      'DateOfBirth': dateOfBirth,
 
       // ── Role & timestamps ────────────────────────────────────────────────
       'role': 'Customer',
@@ -108,6 +109,8 @@ class UserModel {
         email: data['Email'] ?? data['email'] ?? '',
         phoneNumber: data['PhoneNumber'] ?? data['phoneNumber'] ?? '',
         profilePicture: data['ProfilePicture'] ?? '',
+        gender: data['Gender'] ?? data['gender'] ?? '',
+        dateOfBirth: data['DateOfBirth'] ?? data['dateOfBirth'] ?? '',
       );
     } else {
       return UserModel.empty();

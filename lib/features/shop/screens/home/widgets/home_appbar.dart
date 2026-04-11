@@ -18,7 +18,7 @@ class MHomeAppbar extends StatelessWidget implements PreferredSizeWidget {
     final controller = Get.find<HomeController>();
 
     return MAppBar(
-      showBackArrow: true,
+      showBackArrow: false,
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

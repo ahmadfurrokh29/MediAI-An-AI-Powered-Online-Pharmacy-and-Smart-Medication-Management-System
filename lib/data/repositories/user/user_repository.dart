@@ -1,7 +1,11 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:med/features/personalization/models/user_model.dart';
 
 /// Repository class for user-related operations.
@@ -144,7 +148,70 @@ class UserRepository extends GetxController {
     await _db.collection('Users').doc(uid).update(json);
   }
 
-  /// Function to update user data in Firestore.
+  /// Upload a profile image to Firebase Storage and return the download URL.
+  Future<String> uploadImage(String path, XFile image) async {
+    try {
+      final ref = FirebaseStorage.instance.ref(path);
+      await ref.putFile(File(image.path));
+      final url = await ref.getDownloadURL();
+      return url;
+    } on FirebaseException catch (e) {
+      throw 'Firebase Storage Error: ${e.message}';
+    } catch (e) {
+      throw 'Something went wrong. Please try again';
+    }
+  }
 
   /// Update any field in specific Users Collection
+  Future<void> updateUserDetails(Map<String, dynamic> json) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    if (uid.isEmpty) return;
+    await _db.collection('Users').doc(uid).update(json);
+  }
+
+  /// Remove duplicate camelCase identity fields that were accidentally created.
+  /// The canonical keys are PascalCase (FirstName, LastName, etc.).
+  /// The admin panel's CustomerModel.fromSnapshot already reads PascalCase with
+  /// camelCase fallback, so the duplicates are unnecessary.
+  Future<void> cleanupDuplicateFields(String uid) async {
+    try {
+      final ref = _db.collection('Users').doc(uid);
+      final snap = await ref.get();
+      if (!snap.exists) return;
+      final data = snap.data() ?? {};
+
+      // Only delete camelCase keys if the PascalCase version also exists
+      final keysToDelete = <String, dynamic>{};
+      if (data.containsKey('FirstName') && data.containsKey('firstName')) {
+        keysToDelete['firstName'] = FieldValue.delete();
+      }
+      if (data.containsKey('LastName') && data.containsKey('lastName')) {
+        keysToDelete['lastName'] = FieldValue.delete();
+      }
+      if (data.containsKey('Username') && data.containsKey('username')) {
+        keysToDelete['username'] = FieldValue.delete();
+      }
+      if (data.containsKey('Email') && data.containsKey('email')) {
+        keysToDelete['email'] = FieldValue.delete();
+      }
+      if (data.containsKey('PhoneNumber') && data.containsKey('phoneNumber')) {
+        keysToDelete['phoneNumber'] = FieldValue.delete();
+      }
+
+      if (keysToDelete.isNotEmpty) {
+        await ref.update(keysToDelete);
+        print(
+          '[UserRepo] Cleaned up duplicate keys: ${keysToDelete.keys.toList()}',
+        );
+      }
+    } catch (e) {
+      // Non-fatal — don't block the app
+      print('[UserRepo][cleanupDuplicateFields] $e');
+    }
+  }
+
+  /// Remove user data from Firestore.
+  Future<void> removeUserRecord(String uid) async {
+    await _db.collection('Users').doc(uid).delete();
+  }
 }

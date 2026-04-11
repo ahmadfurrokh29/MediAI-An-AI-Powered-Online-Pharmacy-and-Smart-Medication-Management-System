@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-// import 'package:flutter/src/material/theme.dart';
 import 'package:get/get.dart';
-// import 'package:get/get_core/src/get_main.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:med/data/repositories/authentication/authentication_repository.dart';
 import 'package:med/features/authentication/screens/passwor_configuration/reset_password.dart';
 import '../../../../utils/constants/sizes.dart';
 import '../../../../utils/constants/text_strings.dart';
@@ -12,6 +11,8 @@ class ForgetPassword extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final emailController = TextEditingController();
+
     return Scaffold(
       appBar: AppBar(),
       body: Padding(
@@ -30,7 +31,9 @@ class ForgetPassword extends StatelessWidget {
             ),
             const SizedBox(height: MSizes.spaceBtwSections * 2),
             TextFormField(
-              decoration: InputDecoration(
+              controller: emailController,
+              keyboardType: TextInputType.emailAddress,
+              decoration: const InputDecoration(
                 labelText: MTexts.email,
                 prefixIcon: Icon(Iconsax.direct_right),
               ),
@@ -39,7 +42,30 @@ class ForgetPassword extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () => Get.off(()=>const ResetPassword()),
+                onPressed: () async {
+                  final email = emailController.text.trim();
+                  if (email.isEmpty) {
+                    Get.snackbar(
+                      'Error',
+                      'Please enter your email address',
+                      snackPosition: SnackPosition.BOTTOM,
+                      backgroundColor: Colors.red.shade100,
+                    );
+                    return;
+                  }
+                  try {
+                    await AuthenticationRepository.instance
+                        .sendPasswordResetEmail(email);
+                    Get.off(() => ResetPassword(email: email));
+                  } catch (e) {
+                    Get.snackbar(
+                      'Error',
+                      e.toString(),
+                      snackPosition: SnackPosition.BOTTOM,
+                      backgroundColor: Colors.red.shade100,
+                    );
+                  }
+                },
                 child: Text(MTexts.submit),
               ),
             ),

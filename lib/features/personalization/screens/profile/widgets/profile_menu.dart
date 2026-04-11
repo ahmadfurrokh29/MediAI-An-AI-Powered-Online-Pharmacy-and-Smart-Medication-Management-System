@@ -1,15 +1,19 @@
-
-
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:med/utils/constants/sizes.dart';
 
 class MProfileMenu extends StatelessWidget {
   const MProfileMenu({
-    super.key, this.icon=Iconsax.arrow_right_34, required this.onPressed, required this.title, required this.value,
+    super.key,
+    this.icon = Iconsax.arrow_right_34,
+    this.showIcon = true,
+    required this.onPressed,
+    required this.title,
+    required this.value,
   });
 
   final IconData icon;
+  final bool showIcon;
   final VoidCallback onPressed;
   final String title, value;
 
@@ -18,7 +22,9 @@ class MProfileMenu extends StatelessWidget {
     return GestureDetector(
       onTap: onPressed,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical:MSizes.spaceBtwItems/1.5),
+        padding: const EdgeInsets.symmetric(
+          vertical: MSizes.spaceBtwItems / 1.5,
+        ),
         child: Row(
           children: [
             Expanded(
@@ -37,7 +43,10 @@ class MProfileMenu extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            Expanded(child: Icon(icon, size: 18)),
+            if (showIcon)
+              Expanded(child: Icon(icon, size: 18))
+            else
+              const Expanded(child: SizedBox.shrink()),
           ],
         ),
       ),

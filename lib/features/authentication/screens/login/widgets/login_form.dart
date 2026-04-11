@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:med/features/authentication/screens/passwor_configuration/forget_password.dart';
 import 'package:med/features/authentication/screens/signup/signup.dart';
@@ -19,8 +20,21 @@ class _MLoginFormState extends State<MLoginForm> {
   final _formKey = GlobalKey<FormState>();
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
+  final _storage = GetStorage();
   bool _isLoading = false;
   bool _obscure = true;
+  bool _rememberMe = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Restore saved credentials if Remember Me was checked
+    _rememberMe = _storage.read('REMEMBER_ME_STATUS') ?? false;
+    if (_rememberMe) {
+      _emailCtrl.text = _storage.read('REMEMBER_ME_EMAIL') ?? '';
+      _passwordCtrl.text = _storage.read('REMEMBER_ME_PASSWORD') ?? '';
+    }
+  }
 
   @override
   void dispose() {
@@ -37,6 +51,18 @@ class _MLoginFormState extends State<MLoginForm> {
         email: _emailCtrl.text.trim(),
         password: _passwordCtrl.text.trim(),
       );
+
+      // Save or clear credentials based on Remember Me
+      if (_rememberMe) {
+        _storage.write('REMEMBER_ME_STATUS', true);
+        _storage.write('REMEMBER_ME_EMAIL', _emailCtrl.text.trim());
+        _storage.write('REMEMBER_ME_PASSWORD', _passwordCtrl.text.trim());
+      } else {
+        _storage.remove('REMEMBER_ME_STATUS');
+        _storage.remove('REMEMBER_ME_EMAIL');
+        _storage.remove('REMEMBER_ME_PASSWORD');
+      }
+
       Get.offAll(() => const NavigationMenu());
     } on FirebaseAuthException catch (e) {
       final msg = e.code == 'user-not-found'
@@ -101,7 +127,11 @@ class _MLoginFormState extends State<MLoginForm> {
               children: [
                 Row(
                   children: [
-                    Checkbox(value: true, onChanged: (v) {}),
+                    Checkbox(
+                      value: _rememberMe,
+                      onChanged: (v) =>
+                          setState(() => _rememberMe = v ?? false),
+                    ),
                     const Text(MTexts.rememberMe),
                   ],
                 ),

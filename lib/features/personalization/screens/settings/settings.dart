@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
@@ -10,6 +12,7 @@ import 'package:med/features/personalization/screens/address/address.dart';
 import 'package:med/features/personalization/screens/bank_account/bank_account.dart';
 import 'package:med/features/personalization/screens/mymedicalhistory/mymedicalhistory.dart';
 import 'package:med/features/personalization/screens/mymedication/my_medication.dart';
+import 'package:med/features/personalization/screens/notifications/notifications.dart';
 import 'package:med/features/personalization/screens/profile/profile.dart';
 import 'package:med/features/shop/screens/cart/cart.dart';
 import 'package:med/features/shop/screens/order/order.dart';
@@ -19,6 +22,40 @@ import 'package:med/data/repositories/authentication/authentication_repository.d
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
+
+  /// Builds a small red circle badge showing the unread notification count.
+  Widget _buildUnreadBadge() {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return const SizedBox.shrink();
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('Users')
+          .doc(uid)
+          .collection('Notifications')
+          .where('isRead', isEqualTo: false)
+          .snapshots(),
+      builder: (context, snapshot) {
+        final count = snapshot.hasData ? snapshot.data!.docs.length : 0;
+        if (count == 0) return const SizedBox.shrink();
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.red,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            count > 99 ? '99+' : '$count',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -104,8 +141,9 @@ class SettingsScreen extends StatelessWidget {
                   MSettingsMenuTile(
                     icon: Iconsax.notification,
                     title: 'Notifications',
-                    subTitle: 'Set any kind of notification message',
-                    onTap: () {},
+                    subTitle: 'Announcements and updates',
+                    trailing: _buildUnreadBadge(),
+                    onTap: () => Get.to(() => const NotificationsScreen()),
                   ),
                   MSettingsMenuTile(
                     icon: Iconsax.security_card,
@@ -127,7 +165,6 @@ class SettingsScreen extends StatelessWidget {
                   //   title: 'Load Data',
                   //   subTitle: 'Upload Data to your Cloud Firebase',
                   // ),
-
                   MSettingsMenuTile(
                     icon: Iconsax.location,
                     title: 'Geolocation',
@@ -199,7 +236,7 @@ class SettingsScreen extends StatelessWidget {
                       child: const Text('Logout'),
                     ),
                   ), // SizedBox
-                  const SizedBox(height: MSizes.spaceBtwSections ),
+                  const SizedBox(height: MSizes.spaceBtwSections),
                 ],
               ), // Column
             ), // Padding
