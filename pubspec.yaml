@@ -45,6 +45,14 @@
   google_sign_in: ^6.1.0
   flutter_facebook_auth: ^7.0.1
   share_plus: ^12.0.1
+  # Stock & Reminder Module
+  sqflite: ^2.2.0
+  path_provider: ^2.0.15
+  path: ^1.8.3
+  uuid: ^4.5.3
+  flutter_local_notifications: ^20.1.0
+  timezone: ^0.10.1
+  flutter_timezone: ^5.0.1
 
 
  dev_dependencies:

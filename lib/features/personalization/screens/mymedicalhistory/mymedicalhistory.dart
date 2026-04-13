@@ -5,7 +5,7 @@ import 'package:iconsax/iconsax.dart';
 import 'package:med/common/widgets/appbar/appbar.dart';
 import 'package:med/common/widgets/appbar/tabbar.dart';
 import 'package:med/features/personalization/screens/mymedicalhistory/widgets/disease_card.dart';
-import 'package:med/features/personalization/screens/mymedicalhistory/widgets/disease_form.dart';
+import 'package:med/features/personalization/Stock-_and_reminder_management/lib/screens/ocr_scan/ocr_scan_page.dart';
 import 'package:med/utils/constants/colors.dart';
 
 class MMyMedicalHistoryScreen extends StatelessWidget {
@@ -18,7 +18,7 @@ class MMyMedicalHistoryScreen extends StatelessWidget {
       child: Scaffold(
         floatingActionButton: FloatingActionButton(
           backgroundColor: MColors.primary,
-          onPressed: () => Get.to(() => const AddNewMedicationScreen()),
+          onPressed: () => Get.to(() => const OCRScanPage()),
           child: Icon(Iconsax.add, color: MColors.white),
           shape: CircleBorder(),
         ),

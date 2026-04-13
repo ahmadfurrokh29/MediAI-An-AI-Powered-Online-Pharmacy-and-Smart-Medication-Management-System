@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:med/bindings/general_bindings.dart';
 import 'package:med/utils/constants/colors.dart';
+import 'package:med/utils/navigation_key.dart';
 import 'package:med/utils/theme/theme.dart';
 
 class App extends StatelessWidget {
@@ -10,6 +11,7 @@ class App extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
+      navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       themeMode: ThemeMode.system,
       theme: MAppTheme.lightTheme,

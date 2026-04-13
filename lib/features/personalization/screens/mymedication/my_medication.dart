@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:med/common/widgets/appbar/appbar.dart';
 import 'package:med/common/widgets/appbar/tabbar.dart';
+import 'package:med/features/personalization/Stock-_and_reminder_management/lib/screens/reminder/reminder_screen.dart';
+import 'package:med/features/personalization/Stock-_and_reminder_management/lib/screens/stock_management_screen.dart';
 
 class MMyMedicationScreen extends StatelessWidget {
   const MMyMedicationScreen({super.key});
@@ -28,16 +30,10 @@ class MMyMedicationScreen extends StatelessWidget {
             Expanded(
               child: TabBarView(
                 children: [
-                  // Chronic Diseases Tab Content
-                  Center(child: Text('Alarm Cards Will display here')),
-                  // Non-Chronic Diseases Tab Content
-                  Center(
-                    child: Center(
-                      child: Text(
-                        'Ongoing Medicine Course Detail Card Display',
-                      ),
-                    ),
-                  ),
+                  // Medicine Reminder Tab
+                  RemindersScreen(showAppBar: false),
+                  // Medicines In-stock Tab
+                  StockManagementScreen(showAppBar: false),
                 ],
               ),
             ),

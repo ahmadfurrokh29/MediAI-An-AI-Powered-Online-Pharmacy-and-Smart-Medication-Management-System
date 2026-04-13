@@ -6,6 +6,9 @@ import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:med/data/repositories/authentication/authentication_repository.dart';
+import 'package:med/features/personalization/Stock-_and_reminder_management/lib/services/notification_service.dart';
+import 'package:med/features/personalization/Stock-_and_reminder_management/lib/services/sync_service.dart';
+import 'package:med/features/personalization/Stock-_and_reminder_management/lib/services/connectivity_service.dart';
 import 'package:med/firebase_options.dart';
 import 'app.dart';
 
@@ -29,6 +32,21 @@ Future<void> main() async {
     // ignore: avoid_print
     print('[main] Could not set FirebaseAuth language code');
   }
+  // Initialize Notifications & Alarms
+  await NotificationService.init();
+  await NotificationService.cacheInitialNotification();
+
+  // Initialize Connectivity Monitoring (for offline-first sync)
+  await ConnectivityService.initialize();
+
   // todo: Initialize Authentication
   runApp(const App());
+
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    NotificationService.processPendingNotification();
+    // Re-schedule all alarms from local DB (survives app restarts)
+    NotificationService.scheduleAllFromLocal();
+    // Push any pending changes to Firestore
+    SyncService.trySyncNow();
+  });
 }
