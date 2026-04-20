@@ -1,0 +1,58 @@
+name: med_admin
+description: A new Flutter project.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.9.2 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+
+  cupertino_icons: ^1.0.8
+  get: ^4.7.3
+  fl_chart: ^1.1.1
+  flutter_quill: ^11.5.0
+  image_picker: ^1.2.1
+  firebase_core: ^3.8.1
+  firebase_auth: ^5.3.4
+  cloud_firestore: ^5.6.0
+  firebase_storage: ^12.4.1
+  intl: ^0.20.2
+  excel: ^4.0.6
+  universal_html: ^2.3.0
+  file_picker: ^10.3.10
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/icons/payment_methods/
+    - assets/logos/
+
+  fonts:
+    - family: Urbanist
+      fonts:
+        - asset: assets/fonts/urbanist/Urbanist-Light.ttf
+          weight: 300
+        - asset: assets/fonts/urbanist/Urbanist-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/urbanist/Urbanist-Italic.ttf
+          style: italic
+        - asset: assets/fonts/urbanist/Urbanist-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/urbanist/Urbanist-MediumItalic.ttf
+          weight: 500
+          style: italic
+        - asset: assets/fonts/urbanist/Urbanist-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/urbanist/Urbanist-Bold.ttf
+          weight: 800

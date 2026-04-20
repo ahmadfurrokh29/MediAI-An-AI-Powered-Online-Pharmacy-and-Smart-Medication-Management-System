@@ -1,0 +1,99 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuth() && exists(/databases/$(database)/documents/Admins/$(request.auth.uid));
+    }
+
+    // Admins
+    match /Admins/{doc} {
+      allow read: if isAuth();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Banners - public read, admin write
+    match /Banners/{bannerId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Brands - public read, admin write
+    match /Brands/{brandId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Categories - public read, admin write
+    match /Categories/{categoryId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Subcategories - public read, admin write
+    match /Subcategories/{subcategoryId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Products - public read, admin write
+    match /Products/{productId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+
+      match /Reviews/{reviewId} {
+        allow read: if true;
+        allow create: if isAuth();
+        allow update, delete: if isAuth();
+      }
+    }
+
+    // Orders - authenticated read/write
+    match /Orders/{orderId} {
+      allow read, write: if isAuth();
+    }
+
+    // Coupons - authenticated read, admin write
+    match /Coupons/{couponId} {
+      allow read: if isAuth();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Announcements - authenticated read, admin write
+    match /Announcements/{announcementId} {
+      allow read: if isAuth();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Users - own data + admin access
+    match /Users/{userId} {
+      allow read: if isAuth() && (request.auth.uid == userId || isAdmin());
+      allow write: if isAuth() && (request.auth.uid == userId || isAdmin());
+
+      match /Cart/{itemId} {
+        allow read, write: if isAuth() && (request.auth.uid == userId || isAdmin());
+      }
+
+      match /Wishlist/{itemId} {
+        allow read, write: if isAuth() && (request.auth.uid == userId || isAdmin());
+      }
+
+      match /Notifications/{notifId} {
+        allow read, write: if isAuth() && (request.auth.uid == userId || isAdmin());
+      }
+
+      match /medicines/{medId} {
+        allow read, write: if isAuth() && (request.auth.uid == userId || isAdmin());
+
+        match /alarms/{alarmId} {
+          allow read, write: if isAuth() && (request.auth.uid == userId || isAdmin());
+        }
+      }
+    }
+  }
+}
