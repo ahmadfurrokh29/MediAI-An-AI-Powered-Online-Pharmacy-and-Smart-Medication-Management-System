@@ -2,68 +2,104 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ── Admins (read-only for clients) ──
-    match /Admins/{doc} {
-      allow read: if request.auth != null;
+    // Helper: check if the caller is authenticated
+    function isAuth() {
+      return request.auth != null;
     }
 
-    // ── Banners (read-only for clients) ──
+    // Helper: check if the caller is an admin (has a doc in the Admins collection)
+    function isAdmin() {
+      return isAuth() && exists(/databases/$(database)/documents/Admins/$(request.auth.uid));
+    }
+
+    // ── Admins ──
+    match /Admins/{doc} {
+      allow read: if isAuth();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ── Banners (public read, admin write) ──
     match /Banners/{doc} {
       allow read: if true;
+      allow create, update, delete: if isAdmin();
     }
 
-    // ── Brands (read-only) ──
+    // ── Brands (public read, admin write) ──
     match /Brands/{doc} {
       allow read: if true;
+      allow create, update, delete: if isAdmin();
     }
 
-    // ── Categories (read-only) ──
+    // ── Categories (public read, admin write) ──
     match /Categories/{doc} {
       allow read: if true;
+      allow create, update, delete: if isAdmin();
     }
 
-    // ── Subcategories (read-only) ──
+    // ── Subcategories (public read, admin write) ──
     match /Subcategories/{doc} {
       allow read: if true;
+      allow create, update, delete: if isAdmin();
     }
 
-    // ── Products (read-only for clients) ──
+    // ── Products (public read, admin write) ──
     match /Products/{doc} {
       allow read: if true;
+      allow create, update, delete: if isAdmin();
+
+      // Reviews subcollection
+      match /Reviews/{reviewId} {
+        allow read: if true;
+        allow create: if isAuth();
+        allow update, delete: if isAuth();
+      }
     }
 
     // ── Orders ──
     match /Orders/{orderId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if isAuth();
+    }
+
+    // ── Coupons (authenticated read, admin write) ──
+    match /Coupons/{couponId} {
+      allow read: if isAuth();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ── Announcements (authenticated read, admin write) ──
+    match /Announcements/{announcementId} {
+      allow read: if isAuth();
+      allow create, update, delete: if isAdmin();
     }
 
     // ── Users ──
     match /Users/{userId} {
-      // Users can read/write their own document
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      // Users can read/write their own doc; admins can read/write any user
+      allow read: if isAuth() && (request.auth.uid == userId || isAdmin());
+      allow write: if isAuth() && (request.auth.uid == userId || isAdmin());
 
       // ── Cart subcollection ──
       match /Cart/{itemId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read, write: if isAuth() && (request.auth.uid == userId || isAdmin());
       }
 
       // ── Wishlist subcollection ──
       match /Wishlist/{itemId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read, write: if isAuth() && (request.auth.uid == userId || isAdmin());
       }
 
       // ── Notifications subcollection ──
       match /Notifications/{notifId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read, write: if isAuth() && (request.auth.uid == userId || isAdmin());
       }
 
       // ── Medicines subcollection (Stock & Reminder module) ──
       match /medicines/{medId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read, write: if isAuth() && (request.auth.uid == userId || isAdmin());
 
-        // ── Alarms subcollection (nested under each medicine) ──
+        // ── Alarms subcollection ──
         match /alarms/{alarmId} {
-          allow read, write: if request.auth != null && request.auth.uid == userId;
+          allow read, write: if isAuth() && (request.auth.uid == userId || isAdmin());
         }
       }
     }

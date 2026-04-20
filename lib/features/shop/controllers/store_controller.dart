@@ -139,22 +139,40 @@ class StoreController extends GetxController {
 
   // ── Derived data helpers ──────────────────────────────────────────────
 
-  /// Returns the top [limit] brands for a category, sorted by total brand rating
-  /// (sum of avgRating of all products in that brand within the category).
+  /// Returns brands that have products in [categoryId], sorted by
+  /// average rating of their products in that category (highest first).
+  /// When no reviews exist (all ratings 0), brands keep their natural order.
   List<Map<String, dynamic>> brandsForCategory(
     String categoryId, {
-    int limit = 2,
+    int? limit,
   }) {
+    // Find the category name from categoryId
+    final catEntry = categories.firstWhereOrNull((c) => c['id'] == categoryId);
+    final catName = catEntry != null ? (catEntry['name'] as String) : '';
+
+    // Collect brand names that actually have products in this category
+    final Set<String> brandNamesInCategory = {};
+    for (final p in allProducts) {
+      if ((p['categoryName'] as String).toLowerCase() == catName.toLowerCase()) {
+        brandNamesInCategory.add((p['brandName'] as String).toLowerCase());
+      }
+    }
+
+    // Filter allBrands to only those with products in this category
     final matching = allBrands
-        .where((b) => (b['categoryIds'] as List<String>).contains(categoryId))
+        .where((b) => brandNamesInCategory.contains(
+              (b['name'] as String).toLowerCase()))
         .toList();
-    // Sort by total avg rating of products in this category for this brand
+
+    // Sort by avg rating in this category (highest first)
     matching.sort((a, b) {
-      final aRating = _brandRatingInCategory(a['name'] as String, null);
-      final bRating = _brandRatingInCategory(b['name'] as String, null);
+      final aRating = _brandRatingInCategory(a['name'] as String, catName);
+      final bRating = _brandRatingInCategory(b['name'] as String, catName);
       return bRating.compareTo(aRating);
     });
-    return matching.take(limit).toList();
+
+    if (limit != null) return matching.take(limit).toList();
+    return matching;
   }
 
   /// Total average rating of all products for a brand (optionally in a category).
@@ -282,6 +300,14 @@ class StoreController extends GetxController {
         return bRating.compareTo(aRating);
       });
     return sorted.take(limit).toList();
+  }
+
+  /// Returns the count of products for a brand within a specific category.
+  int productCountForBrandInCategory(String brandName, String categoryName) {
+    return allProducts.where((p) =>
+        (p['brandName'] as String).toLowerCase() == brandName.toLowerCase() &&
+        (p['categoryName'] as String).toLowerCase() == categoryName.toLowerCase()
+    ).length;
   }
 
   // ── Search: products + brands ─────────────────────────────────────────

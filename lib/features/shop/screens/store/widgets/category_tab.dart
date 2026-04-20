@@ -31,13 +31,16 @@ class MCategoryTab extends StatelessWidget {
     final dark = MHelperFunctions.isDarkMode(context);
     final controller = StoreController.instance;
 
-    // Determine which brands / products to display
+    // Category tabs: top 2 brands with products in that category, sorted by highest rated
+    // View All tab: top 2 brands globally
     final List<Map<String, dynamic>> brands = categoryId != null
         ? controller.brandsForCategory(categoryId!, limit: 2)
         : controller.topBrandsGlobal(limit: 2);
 
+    // Category tabs: show featured products for that category
+    // View All tab: show top-rated products globally
     final List<Map<String, dynamic>> youMightLike = categoryId != null
-        ? controller.topRatedForCategory(categoryName!, limit: 4)
+        ? controller.featuredForCategory(categoryName!, limit: 4)
         : controller.topRatedGlobal(limit: 4);
 
     return ListView(
@@ -53,7 +56,12 @@ class MCategoryTab extends StatelessWidget {
                 final brandName = (brand['name'] ?? '').toString();
                 final brandImage = (brand['image'] ?? '').toString().trim();
                 final isNetwork = brandImage.startsWith('http');
-                final brandCount = brand['productCount'] ?? 0;
+
+                // In "View All" tab use overall product count;
+                // in category tabs use category-filtered count.
+                final int brandCount = categoryId == null
+                    ? (brand['productCount'] ?? 0) as int
+                    : controller.productCountForBrandInCategory(brandName, categoryName!);
 
                 final products = controller.productsForBrand(
                   brandName,
@@ -81,10 +89,10 @@ class MCategoryTab extends StatelessWidget {
                   () => AllProducts(
                     title: categoryName != null
                         ? 'Featured in $categoryName'
-                        : 'Featured Products',
+                        : 'Top Rated Products',
                     products: categoryId != null
                         ? controller.featuredForCategory(categoryName!)
-                        : controller.featuredGlobal(),
+                        : controller.topRatedGlobal(limit: 50),
                   ),
                 ),
               ),
