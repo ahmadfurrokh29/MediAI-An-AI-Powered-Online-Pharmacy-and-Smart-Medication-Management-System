@@ -66,13 +66,33 @@ class _StockManagementScreenState extends State<StockManagementScreen> {
 
       for (var med in allMedicines) {
         int currentStock = int.tryParse(med['available_stock'].toString()) ?? 0;
-        int freq = _parseFrequency((med['frequency'] ?? '').toString());
-        int alertDays = int.tryParse(med['alert_before_days'].toString()) ?? 3;
-        int warningThreshold = (freq * alertDays).clamp(5, 9999);
+        int alertDays = int.tryParse(med['alert_before_days'].toString()) ?? 0;
+        bool isChronic = med['chronic'] == 1 || med['chronic'] == true;
 
         if (currentStock == 0) {
           tempOut.add(med);
-        } else if (currentStock <= warningThreshold) {
+          continue;
+        }
+
+        // alert_before_days == 0 means alerts disabled → always normal
+        if (alertDays <= 0) {
+          tempNormal.add(med);
+          continue;
+        }
+
+        int freq = _parseFrequency((med['frequency'] ?? '').toString());
+        int warningThreshold = freq * alertDays;
+
+        if (!isChronic) {
+          int totalDoses = int.tryParse(med['total_no_of_doses'].toString()) ?? 0;
+          // Non-chronic: if stock covers full course, always normal
+          if (currentStock >= totalDoses) {
+            tempNormal.add(med);
+            continue;
+          }
+        }
+
+        if (currentStock <= warningThreshold) {
           tempLow.add(med);
         } else {
           tempNormal.add(med);

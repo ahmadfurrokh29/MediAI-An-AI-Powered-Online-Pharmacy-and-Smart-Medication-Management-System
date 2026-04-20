@@ -56,19 +56,32 @@ void callbackDispatcher() {
 
           int currentStock =
               int.tryParse(med['available_stock'].toString()) ?? 0;
-          String freqStr = (med['frequency'] ?? '')
-              .toString()
-              .toLowerCase()
-              .trim();
-          int freq = 1;
-          if (freqStr.contains('/')) {
-            freq = int.tryParse(freqStr.split('/')[0].trim()) ?? 1;
-          }
           int alertDays =
-              int.tryParse(med['alert_before_days'].toString()) ?? 3;
-          int warningThreshold = (freq * alertDays).clamp(5, 9999);
+              int.tryParse(med['alert_before_days'].toString()) ?? 0;
+          bool isChronic = med['chronic'] == 1 || med['chronic'] == true;
 
-          if (currentStock > warningThreshold) continue;
+          // alert_before_days == 0 means disabled
+          if (alertDays <= 0) continue;
+          // Out of stock is handled separately (always show)
+          if (currentStock == 0) {
+            // fall through to send out-of-stock alert
+          } else {
+            if (!isChronic) {
+              int totalDoses =
+                  int.tryParse(med['total_no_of_doses'].toString()) ?? 0;
+              if (currentStock >= totalDoses) continue;
+            }
+            String freqStr = (med['frequency'] ?? '')
+                .toString()
+                .toLowerCase()
+                .trim();
+            int freq = 1;
+            if (freqStr.contains('/')) {
+              freq = int.tryParse(freqStr.split('/')[0].trim()) ?? 1;
+            }
+            int warningThreshold = freq * alertDays;
+            if (currentStock > warningThreshold) continue;
+          }
 
           final name = med['medicine_name'] ?? 'Medicine';
           final notifId = medId.hashCode + 90000;
@@ -707,18 +720,31 @@ class NotificationService {
         if (_sentStockAlerts.contains(medId)) continue;
 
         int currentStock = int.tryParse(med['available_stock'].toString()) ?? 0;
-        String freqStr = (med['frequency'] ?? '')
-            .toString()
-            .toLowerCase()
-            .trim();
-        int freq = 1;
-        if (freqStr.contains('/')) {
-          freq = int.tryParse(freqStr.split('/')[0].trim()) ?? 1;
-        }
-        int alertDays = int.tryParse(med['alert_before_days'].toString()) ?? 3;
-        int warningThreshold = (freq * alertDays).clamp(5, 9999);
+        int alertDays = int.tryParse(med['alert_before_days'].toString()) ?? 0;
+        bool isChronic = med['chronic'] == 1 || med['chronic'] == true;
 
-        bool isLowOrOut = currentStock <= warningThreshold;
+        // alert_before_days == 0 means disabled
+        if (alertDays <= 0) continue;
+
+        bool isLowOrOut = false;
+        if (currentStock == 0) {
+          isLowOrOut = true;
+        } else {
+          if (!isChronic) {
+            int totalDoses = int.tryParse(med['total_no_of_doses'].toString()) ?? 0;
+            if (currentStock >= totalDoses) continue;
+          }
+          String freqStr = (med['frequency'] ?? '')
+              .toString()
+              .toLowerCase()
+              .trim();
+          int freq = 1;
+          if (freqStr.contains('/')) {
+            freq = int.tryParse(freqStr.split('/')[0].trim()) ?? 1;
+          }
+          int warningThreshold = freq * alertDays;
+          isLowOrOut = currentStock <= warningThreshold;
+        }
         if (!isLowOrOut) continue;
 
         final name = med['medicine_name'] ?? 'Medicine';

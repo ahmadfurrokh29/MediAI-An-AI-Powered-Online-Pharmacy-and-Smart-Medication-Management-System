@@ -13,7 +13,7 @@ import 'package:med/firebase_options.dart';
 import 'app.dart';
 
 Future<void> main() async {
-  // Widget Bindings
+  // Widget Bindings  
   final WidgetsBinding widgetsBinding =
       WidgetsFlutterBinding.ensureInitialized();
   // todo: Init Local Storage

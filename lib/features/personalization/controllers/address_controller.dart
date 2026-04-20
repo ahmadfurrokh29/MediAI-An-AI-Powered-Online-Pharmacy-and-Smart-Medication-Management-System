@@ -112,6 +112,7 @@ class AddressController extends GetxController {
   Future<void> selectAddress(int index) async {
     if (index < 0 || index >= addresses.length) return;
     selectedIndex.value = index;
+    addresses.refresh(); // Force UI rebuild immediately
     await _persistAddresses();
   }
 

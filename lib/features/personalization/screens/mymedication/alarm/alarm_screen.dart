@@ -412,31 +412,20 @@ class _AlarmScreenState extends State<AlarmScreen> {
           freq = 4;
 
         int dailyConsumption = freq;
-        int alertDays = int.tryParse(med['alert_before_days'].toString()) ?? 3;
-        int calculatedThreshold = dailyConsumption * alertDays;
-        int warningThreshold = calculatedThreshold > 5
-            ? calculatedThreshold
-            : 5;
+        int alertDays = int.tryParse(med['alert_before_days'].toString()) ?? 0;
 
         if (currentStock == 0) {
           outOfStockMedicines.add(med['medicine_name']);
-        } else if (currentStock <= warningThreshold) {
-          bool needsAlert = false;
-          String suggestionText = "";
+        } else if (alertDays > 0) {
+          int warningThreshold = dailyConsumption * alertDays;
 
-          if (isChronic) {
-            needsAlert = true;
-            suggestionText =
-                "Tip: Order ${dailyConsumption * 10} tablets for a 10-day refill.";
-          } else {
-            if (currentStock < currentTotalDoses) {
-              needsAlert = true;
-              suggestionText =
-                  "Tip: Buy ${currentTotalDoses - currentStock} more to finish your course.";
-            }
-          }
-
-          if (needsAlert) {
+          // Non-chronic: skip if stock covers full course
+          if (!isChronic && currentStock >= currentTotalDoses) {
+            // No alert needed
+          } else if (currentStock <= warningThreshold) {
+            String suggestionText = isChronic
+                ? "Tip: Order ${dailyConsumption * 10} tablets for a 10-day refill."
+                : "Tip: Buy ${currentTotalDoses - currentStock} more to finish your course.";
             lowStockMedicines.add(
               "${med['medicine_name']} (Only $currentStock left)\n💡 $suggestionText",
             );

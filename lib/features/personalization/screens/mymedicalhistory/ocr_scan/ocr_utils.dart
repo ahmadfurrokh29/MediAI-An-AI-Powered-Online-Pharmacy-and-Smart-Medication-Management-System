@@ -5,14 +5,15 @@ import 'package:http/http.dart' as http;
 class OCRUtils {
   static const String geminiApiKey = "YOUR_GEMINI_API_KEY_HERE";
 
-  static const String geminiEndpoint =
+  static const String _primaryEndpoint =
       "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+
+  static const String _fallbackEndpoint =
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent";
 
   static Future<List<Map<String, dynamic>>> analyzePrescriptionWithGemini(
     File imageFile,
   ) async {
-    final url = Uri.parse("$geminiEndpoint?key=$geminiApiKey");
-
     final imageBytes = await imageFile.readAsBytes();
     final base64Image = base64Encode(imageBytes);
 
@@ -45,6 +46,33 @@ class OCRUtils {
         "responseMimeType": "application/json",
       },
     });
+
+    // Try primary model first, fallback to lite on server errors
+    try {
+      return await _callGemini(_primaryEndpoint, body);
+    } catch (e) {
+      if (_isServerBusyError(e)) {
+        print("⚠️ Gemini 2.5 Flash busy, falling back to Flash Lite...");
+        return await _callGemini(_fallbackEndpoint, body);
+      }
+      rethrow;
+    }
+  }
+
+  static bool _isServerBusyError(Object e) {
+    final msg = e.toString();
+    return msg.contains('503') ||
+        msg.contains('429') ||
+        msg.contains('500') ||
+        msg.contains('overloaded') ||
+        msg.contains('RESOURCE_EXHAUSTED');
+  }
+
+  static Future<List<Map<String, dynamic>>> _callGemini(
+    String endpoint,
+    String body,
+  ) async {
+    final url = Uri.parse("$endpoint?key=$geminiApiKey");
 
     final response = await http.post(
       url,

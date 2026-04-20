@@ -38,6 +38,17 @@ class _MedicineFormPageState extends State<MedicineFormPage> {
   bool isChronic = false;
   DateTime startDate = DateTime.now();
 
+  /// Whether the alert-before-days field should be shown/enabled
+  bool get _isAlertDaysEnabled {
+    final stock = int.tryParse(stockController.text) ?? 0;
+    if (isChronic) return true; // always enabled for chronic
+    // Non-chronic: disabled if stock == 0 or stock >= required doses
+    if (stock == 0) return false;
+    final requiredDoses = _calculateTotalDoses();
+    if (stock >= requiredDoses) return false;
+    return true;
+  }
+
   // Alarm times: 0=Morning, 1=Noon, 2=Night
   List<Map<String, dynamic>> alarmSlots = [];
 
@@ -456,18 +467,53 @@ class _MedicineFormPageState extends State<MedicineFormPage> {
               Icons.inventory,
               dark,
               keyboardType: TextInputType.number,
+              onChanged: (_) => setState(() {}),
             ),
             const SizedBox(height: MSizes.spaceBtwItems),
 
-            _buildLabel('Alert Before (days)', theme),
-            const SizedBox(height: 6),
-            _buildTextField(
-              alertDaysController,
-              'e.g. 3',
-              Icons.notifications_active,
-              dark,
-              keyboardType: TextInputType.number,
+            _buildLabel(
+              _isAlertDaysEnabled
+                  ? 'Alert Before (days)'
+                  : 'Alert Before (days) — disabled',
+              theme,
             ),
+            const SizedBox(height: 6),
+            if (_isAlertDaysEnabled)
+              _buildTextField(
+                alertDaysController,
+                isChronic ? 'e.g. 1' : 'e.g. 2',
+                Icons.notifications_active,
+                dark,
+                keyboardType: TextInputType.number,
+              )
+            else
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  color: dark ? MColors.darkerGrey : Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: dark ? Colors.grey.shade700 : Colors.grey.shade300,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.notifications_off, color: Colors.grey, size: 20),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        (int.tryParse(stockController.text) ?? 0) == 0
+                            ? 'No stock — alert not needed'
+                            : 'Stock covers full course — no alert needed',
+                        style: TextStyle(
+                          color: Colors.grey.shade500,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             const SizedBox(height: MSizes.spaceBtwItems),
 
             // ---- ALARM TIMES (editable) ----
@@ -648,10 +694,12 @@ class _MedicineFormPageState extends State<MedicineFormPage> {
     IconData? icon,
     bool dark, {
     TextInputType? keyboardType,
+    ValueChanged<String>? onChanged,
   }) {
     return TextField(
       controller: controller,
       keyboardType: keyboardType,
+      onChanged: onChanged,
       decoration: _inputDecoration(hint, icon, dark),
     );
   }
@@ -747,6 +795,22 @@ class _MedicineFormPageState extends State<MedicineFormPage> {
       return;
     }
 
+    // Validate alert_before_days: must be >= 1 when enabled
+    int alertDays = int.tryParse(alertDaysController.text) ?? 0;
+    if (_isAlertDaysEnabled) {
+      if (alertDays < 1) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Alert before days must be at least 1'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+    } else {
+      alertDays = 0; // disabled → store 0
+    }
+
     final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
     final durationStr = isChronic
         ? 'Ongoing'
@@ -766,8 +830,15 @@ class _MedicineFormPageState extends State<MedicineFormPage> {
         final oldAlarms = await LocalDB.getMedicineAlarms(medId);
         for (var a in oldAlarms) {
           final aid = a['alarmId']?.toString() ?? '';
-          if (aid.isNotEmpty)
+          if (aid.isNotEmpty) {
             await NotificationService.cancelAlarm(aid.hashCode);
+            // Queue DELETE for old alarm in Firebase
+            await OfflineQueueService.queueOperation(
+              type: 'DELETE',
+              entity: 'ALARM',
+              entityId: aid,
+            );
+          }
         }
         await LocalDB.deleteMedicineAlarms(medId);
       }
@@ -782,7 +853,7 @@ class _MedicineFormPageState extends State<MedicineFormPage> {
         'chronic': isChronic ? 1 : 0,
         'total_no_of_doses': totalDoses,
         'available_stock': int.tryParse(stockController.text) ?? 0,
-        'alert_before_days': int.tryParse(alertDaysController.text) ?? 3,
+        'alert_before_days': alertDays,
       };
 
       // insertMedicine uses ConflictAlgorithm.replace so it will update if medId exists
@@ -814,6 +885,14 @@ class _MedicineFormPageState extends State<MedicineFormPage> {
           'isActive': 1,
         };
         await LocalDB.insertAlarm(uid, medId, alarmData);
+
+        // Queue alarm sync to Firebase
+        await OfflineQueueService.queueOperation(
+          type: isEditing ? 'UPDATE' : 'INSERT',
+          entity: 'ALARM',
+          entityId: alarmId,
+          data: {...alarmData, 'medId': medId, 'uid': uid},
+        );
       }
 
       // Re-schedule all alarms grouped by time slot

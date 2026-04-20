@@ -142,12 +142,8 @@ class _AlarmTriggerScreenState extends State<AlarmTriggerScreen>
           int freq = _parseFrequency(
             (currentMed['frequency'] ?? '').toString(),
           );
-          int dailyConsumption = freq * doseTaken;
           int alertDays =
-              int.tryParse(currentMed['alert_before_days'].toString()) ?? 3;
-          int warningThreshold = (dailyConsumption * alertDays) > 5
-              ? (dailyConsumption * alertDays)
-              : 5;
+              int.tryParse(currentMed['alert_before_days'].toString()) ?? 0;
 
           int newStock = currentStock - doseTaken;
           if (newStock < 0) newStock = 0;
@@ -159,13 +155,24 @@ class _AlarmTriggerScreenState extends State<AlarmTriggerScreen>
           if (newStock == 0) {
             if (isChronic || newTotalDoses > 0)
               outOfStockMedicines.add(med['medicine_name']);
-          } else if (newStock <= warningThreshold) {
-            String suggestion = isChronic
-                ? "Order ${dailyConsumption * 10} for 10-day refill."
-                : "Buy ${newTotalDoses - newStock} more to finish course.";
-            lowStockMedicines.add(
-              "${med['medicine_name']} ($newStock left)\n💡 $suggestion",
-            );
+          } else if (alertDays > 0) {
+            // Only check low stock if alerts are enabled
+            bool shouldAlert = true;
+            if (!isChronic && newStock >= newTotalDoses) {
+              shouldAlert = false; // stock covers remaining course
+            }
+            if (shouldAlert) {
+              int warningThreshold = freq * alertDays;
+              if (newStock <= warningThreshold) {
+                int dailyConsumption = freq * doseTaken;
+                String suggestion = isChronic
+                    ? "Order ${dailyConsumption * 10} for 10-day refill."
+                    : "Buy ${newTotalDoses - newStock} more to finish course.";
+                lowStockMedicines.add(
+                  "${med['medicine_name']} ($newStock left)\n💡 $suggestion",
+                );
+              }
+            }
           }
 
           if (!isChronic && newTotalDoses == 0) {
