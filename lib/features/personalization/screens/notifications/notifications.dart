@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
 import 'package:med/common/widgets/appbar/appbar.dart';
+import 'package:med/features/personalization/screens/mymedication/my_medication.dart';
 import 'package:med/utils/constants/colors.dart';
 import 'package:med/utils/constants/sizes.dart';
 import 'package:med/utils/helpers/helper_functions.dart';
@@ -50,8 +51,6 @@ class NotificationsScreen extends StatelessWidget {
                 }
 
                 if (snapshot.hasError) {
-                  // If the error is about a missing index, show all
-                  // notifications without ordering as a fallback
                   return _buildFallbackList(uid, dark);
                 }
 
@@ -91,7 +90,6 @@ class NotificationsScreen extends StatelessWidget {
         }
 
         final docs = snapshot.data!.docs.toList();
-        // Sort client-side
         docs.sort((a, b) {
           final aTs = a['createdAt'];
           final bTs = b['createdAt'];
@@ -165,9 +163,7 @@ class NotificationsScreen extends StatelessWidget {
         }
         await batch.commit();
       }
-    } catch (_) {
-      // silently ignore
-    }
+    } catch (_) {}
   }
 }
 
@@ -195,118 +191,200 @@ class _NotificationTile extends StatelessWidget {
 
     final timeAgo = _formatTimeAgo(createdAt);
 
-    // Mark as read when tapped
-    if (!isRead) {
-      Future.microtask(() {
-        doc.reference.update({'isRead': true}).catchError((_) {});
-      });
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(MSizes.md),
-      decoration: BoxDecoration(
-        color: isRead
-            ? (dark ? Colors.grey.shade900 : Colors.white)
-            : (dark
-                  ? MColors.primary.withValues(alpha: 0.08)
-                  : MColors.primary.withValues(alpha: 0.04)),
-        borderRadius: BorderRadius.circular(MSizes.borderRadiusSm + 8),
-        border: Border.all(
+    return GestureDetector(
+      onTap: () {
+        // Mark as read on tap
+        if (!isRead) {
+          doc.reference.update({'isRead': true}).catchError((_) {});
+        }
+        // Navigate to in-stock tab for stock alerts
+        if (type == 'stock_alert') {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const MMyMedicationScreen(initialTab: 1),
+            ),
+          );
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.all(MSizes.md),
+        decoration: BoxDecoration(
           color: isRead
-              ? (dark ? Colors.grey.shade800 : Colors.grey.shade200)
-              : MColors.primary.withValues(alpha: 0.2),
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Icon
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: type == 'announcement'
-                  ? MColors.primary.withValues(alpha: 0.12)
-                  : Colors.blue.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              type == 'announcement' ? Iconsax.speaker : Iconsax.notification,
-              color: type == 'announcement' ? MColors.primary : Colors.blue,
-              size: 22,
-            ),
+              ? (dark ? Colors.grey.shade900 : Colors.white)
+              : (dark
+                    ? MColors.primary.withValues(alpha: 0.08)
+                    : MColors.primary.withValues(alpha: 0.04)),
+          borderRadius: BorderRadius.circular(MSizes.borderRadiusSm + 8),
+          border: Border.all(
+            color: isRead
+                ? (dark ? Colors.grey.shade800 : Colors.grey.shade200)
+                : MColors.primary.withValues(alpha: 0.3),
+            width: isRead ? 1 : 1.5,
           ),
-          const SizedBox(width: MSizes.spaceBtwItems),
-
-          // Content
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        title,
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: isRead
-                              ? FontWeight.w500
-                              : FontWeight.w700,
-                          color: dark ? Colors.white : MColors.textPrimary,
-                        ),
-                      ),
-                    ),
-                    if (!isRead)
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: MColors.primary,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                  ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Unread indicator bar ──
+            if (!isRead)
+              Container(
+                width: 4,
+                height: 52,
+                margin: const EdgeInsets.only(right: 10),
+                decoration: BoxDecoration(
+                  color: MColors.primary,
+                  borderRadius: BorderRadius.circular(2),
                 ),
-                if (body.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    body,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: dark
-                          ? Colors.grey.shade400
-                          : MColors.textSecondary,
-                    ),
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
+              ),
+
+            // ── Icon ──
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: type == 'stock_alert'
+                    ? Colors.orange.withValues(alpha: 0.12)
+                    : type == 'medicine_alarm'
+                    ? MColors.primary.withValues(alpha: 0.12)
+                    : type == 'announcement'
+                    ? MColors.primary.withValues(alpha: 0.12)
+                    : Colors.blue.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                type == 'stock_alert'
+                    ? Iconsax.box
+                    : type == 'medicine_alarm'
+                    ? Iconsax.health
+                    : type == 'announcement'
+                    ? Iconsax.speaker
+                    : Iconsax.notification,
+                color: type == 'stock_alert'
+                    ? Colors.orange
+                    : type == 'medicine_alarm'
+                    ? MColors.primary
+                    : type == 'announcement'
+                    ? MColors.primary
+                    : Colors.blue,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: MSizes.spaceBtwItems),
+
+            // ── Content ──
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: isRead
+                                ? FontWeight.w500
+                                : FontWeight.w700,
+                            color: dark ? Colors.white : MColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                      // ── Unread dot ──
+                      if (!isRead)
+                        Container(
+                          width: 10,
+                          height: 10,
+                          decoration: const BoxDecoration(
+                            color: MColors.primary,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                    ],
                   ),
-                ],
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    Icon(Iconsax.clock, size: 12, color: Colors.grey.shade500),
-                    const SizedBox(width: 4),
+                  if (body.isNotEmpty) ...[
+                    const SizedBox(height: 4),
                     Text(
-                      timeAgo,
+                      body,
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: 13,
+                        color: dark
+                            ? Colors.grey.shade400
+                            : MColors.textSecondary,
+                      ),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(
+                        Iconsax.clock,
+                        size: 12,
                         color: Colors.grey.shade500,
                       ),
-                    ),
-                    if (createdBy.isNotEmpty) ...[
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 4),
                       Text(
-                        '· by $createdBy',
+                        timeAgo,
                         style: TextStyle(
                           fontSize: 11,
                           color: Colors.grey.shade500,
                         ),
                       ),
+                      if (createdBy.isNotEmpty) ...[
+                        const SizedBox(width: 8),
+                        Text(
+                          '· by $createdBy',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey.shade500,
+                          ),
+                        ),
+                      ],
+                      const Spacer(),
+                      // ── Delete button ──
+                      GestureDetector(
+                        onTap: () => _confirmDelete(context),
+                        child: Icon(
+                          Iconsax.trash,
+                          size: 18,
+                          color: Colors.red.shade400,
+                        ),
+                      ),
                     ],
-                  ],
-                ),
-              ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _confirmDelete(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Notification?'),
+        content: const Text('This notification will be permanently removed.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              doc.reference.delete().catchError((_) {});
+            },
+            child: Text(
+              'Delete',
+              style: TextStyle(
+                color: Colors.red.shade600,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],

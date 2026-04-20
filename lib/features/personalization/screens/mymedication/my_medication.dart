@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:med/common/widgets/appbar/appbar.dart';
 import 'package:med/common/widgets/appbar/tabbar.dart';
-import 'package:med/features/personalization/Stock-_and_reminder_management/lib/screens/reminder/reminder_screen.dart';
-import 'package:med/features/personalization/Stock-_and_reminder_management/lib/screens/stock_management_screen.dart';
+import 'package:med/features/personalization/screens/mymedication/reminder/reminder_screen.dart';
+import 'package:med/features/personalization/screens/mymedication/stock_management_screen.dart';
 
 class MMyMedicationScreen extends StatelessWidget {
-  const MMyMedicationScreen({super.key});
+  final int initialTab;
+  const MMyMedicationScreen({super.key, this.initialTab = 0});
 
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
       length: 2,
+      initialIndex: initialTab,
       child: Scaffold(
         appBar: MAppBar(
           title: Text(

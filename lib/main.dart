@@ -6,9 +6,9 @@ import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:med/data/repositories/authentication/authentication_repository.dart';
-import 'package:med/features/personalization/Stock-_and_reminder_management/lib/services/notification_service.dart';
-import 'package:med/features/personalization/Stock-_and_reminder_management/lib/services/sync_service.dart';
-import 'package:med/features/personalization/Stock-_and_reminder_management/lib/services/connectivity_service.dart';
+import 'package:med/features/personalization/screens/mymedication/services/notification_service.dart';
+import 'package:med/features/personalization/screens/mymedication/services/sync_service.dart';
+import 'package:med/features/personalization/screens/mymedication/services/connectivity_service.dart';
 import 'package:med/firebase_options.dart';
 import 'app.dart';
 
@@ -46,6 +46,10 @@ Future<void> main() async {
     NotificationService.processPendingNotification();
     // Re-schedule all alarms from local DB (survives app restarts)
     NotificationService.scheduleAllFromLocal();
+    // Check stock levels and send one-time low stock notifications
+    NotificationService.checkAndSendStockAlerts();
+    // Register periodic background stock check (runs even when app is closed)
+    NotificationService.registerBackgroundStockCheck();
     // Push any pending changes to Firestore
     SyncService.trySyncNow();
   });
