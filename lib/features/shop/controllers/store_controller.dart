@@ -153,15 +153,19 @@ class StoreController extends GetxController {
     // Collect brand names that actually have products in this category
     final Set<String> brandNamesInCategory = {};
     for (final p in allProducts) {
-      if ((p['categoryName'] as String).toLowerCase() == catName.toLowerCase()) {
+      if ((p['categoryName'] as String).toLowerCase() ==
+          catName.toLowerCase()) {
         brandNamesInCategory.add((p['brandName'] as String).toLowerCase());
       }
     }
 
     // Filter allBrands to only those with products in this category
     final matching = allBrands
-        .where((b) => brandNamesInCategory.contains(
-              (b['name'] as String).toLowerCase()))
+        .where(
+          (b) => brandNamesInCategory.contains(
+            (b['name'] as String).toLowerCase(),
+          ),
+        )
         .toList();
 
     // Sort by avg rating in this category (highest first)
@@ -191,7 +195,9 @@ class StoreController extends GetxController {
     final list = filtered.toList();
     if (list.isEmpty) return 0.0;
     final totalRating = list.fold<double>(
-        0.0, (sum, p) => sum + (p['avgRating'] as double));
+      0.0,
+      (sum, p) => sum + (p['avgRating'] as double),
+    );
     return totalRating / list.length;
   }
 
@@ -251,25 +257,29 @@ class StoreController extends GetxController {
   }
 
   /// Featured products in a category (IsFeatured toggled on in admin).
-  List<Map<String, dynamic>> featuredForCategory(String categoryName,
-      {int limit = 50}) {
+  List<Map<String, dynamic>> featuredForCategory(
+    String categoryName, {
+    int limit = 50,
+  }) {
     return allProducts
-        .where((p) =>
-            p['isFeatured'] == true &&
-            (p['categoryName'] as String).toLowerCase() ==
-                categoryName.toLowerCase())
+        .where(
+          (p) =>
+              p['isFeatured'] == true &&
+              (p['categoryName'] as String).toLowerCase() ==
+                  categoryName.toLowerCase(),
+        )
         .toList()
-      ..sort((a, b) =>
-          (b['avgRating'] as double).compareTo(a['avgRating'] as double));
+      ..sort(
+        (a, b) =>
+            (b['avgRating'] as double).compareTo(a['avgRating'] as double),
+      );
   }
 
   /// Featured products globally.
   List<Map<String, dynamic>> featuredGlobal({int limit = 50}) {
-    return allProducts
-        .where((p) => p['isFeatured'] == true)
-        .toList()
-      ..sort((a, b) =>
-          (b['avgRating'] as double).compareTo(a['avgRating'] as double));
+    return allProducts.where((p) => p['isFeatured'] == true).toList()..sort(
+      (a, b) => (b['avgRating'] as double).compareTo(a['avgRating'] as double),
+    );
   }
 
   /// Returns all products for a given brand (optionally filtered by category).
@@ -304,10 +314,15 @@ class StoreController extends GetxController {
 
   /// Returns the count of products for a brand within a specific category.
   int productCountForBrandInCategory(String brandName, String categoryName) {
-    return allProducts.where((p) =>
-        (p['brandName'] as String).toLowerCase() == brandName.toLowerCase() &&
-        (p['categoryName'] as String).toLowerCase() == categoryName.toLowerCase()
-    ).length;
+    return allProducts
+        .where(
+          (p) =>
+              (p['brandName'] as String).toLowerCase() ==
+                  brandName.toLowerCase() &&
+              (p['categoryName'] as String).toLowerCase() ==
+                  categoryName.toLowerCase(),
+        )
+        .length;
   }
 
   // ── Search: products + brands ─────────────────────────────────────────

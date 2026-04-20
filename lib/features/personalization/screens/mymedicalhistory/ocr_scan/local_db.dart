@@ -292,6 +292,14 @@ class LocalDB {
     Map<String, dynamic>? entityData,
   }) async {
     final db = await database;
+    // Remove any existing pending changes for this entity to avoid conflicting
+    // operations (e.g., DELETE followed by UPDATE) being processed later.
+    await db.delete(
+      'pending_changes',
+      where: 'entity_type = ? AND entity_id = ?',
+      whereArgs: [entityType, entityId],
+    );
+
     await db.insert('pending_changes', {
       'operation_type': operationType,
       'entity_type': entityType,

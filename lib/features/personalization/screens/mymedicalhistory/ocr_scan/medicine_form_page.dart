@@ -488,7 +488,10 @@ class _MedicineFormPageState extends State<MedicineFormPage> {
               )
             else
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
                 decoration: BoxDecoration(
                   color: dark ? MColors.darkerGrey : Colors.grey.shade100,
                   borderRadius: BorderRadius.circular(12),
@@ -819,29 +822,30 @@ class _MedicineFormPageState extends State<MedicineFormPage> {
     final medName = nameController.text.trim();
     final diseaseName = diseaseNameController.text.trim();
 
-    // Reuse existing medId when editing, generate new one only for new medicines
+    // Reuse existing medId when editing; for new medicines, derive from name+disease
+    // so that saving the same medicine+disease again updates instead of duplicating.
     final medId = isEditing
         ? med['medId'].toString()
-        : '${medName}_${DateTime.now().millisecondsSinceEpoch}';
+        : '${medName}_${diseaseName}'
+              .replaceAll(RegExp(r'[^a-zA-Z0-9_]'), '_')
+              .toLowerCase();
 
     try {
-      // If editing, cancel old alarms and delete old alarm rows first
-      if (isEditing) {
-        final oldAlarms = await LocalDB.getMedicineAlarms(medId);
-        for (var a in oldAlarms) {
-          final aid = a['alarmId']?.toString() ?? '';
-          if (aid.isNotEmpty) {
-            await NotificationService.cancelAlarm(aid.hashCode);
-            // Queue DELETE for old alarm in Firebase
-            await OfflineQueueService.queueOperation(
-              type: 'DELETE',
-              entity: 'ALARM',
-              entityId: aid,
-            );
-          }
+      // Always cancel old alarms and delete old alarm rows for this medId
+      // (handles both editing and re-adding a medicine with same name+disease)
+      final oldAlarms = await LocalDB.getMedicineAlarms(medId);
+      for (var a in oldAlarms) {
+        final aid = a['alarmId']?.toString() ?? '';
+        if (aid.isNotEmpty) {
+          await NotificationService.cancelAlarm(aid.hashCode);
+          await OfflineQueueService.queueOperation(
+            type: 'DELETE',
+            entity: 'ALARM',
+            entityId: aid,
+          );
         }
-        await LocalDB.deleteMedicineAlarms(medId);
       }
+      await LocalDB.deleteMedicineAlarms(medId);
 
       final medicineData = {
         'medId': medId,

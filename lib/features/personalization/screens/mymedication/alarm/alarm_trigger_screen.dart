@@ -395,6 +395,7 @@ class _AlarmTriggerScreenState extends State<AlarmTriggerScreen>
                   final isSelected = selectedMedicines[medId] == true;
                   final dose = med['specific_dose']?.toString() ?? '1';
                   final name = med['medicine_name'] ?? 'Medicine';
+                  final disease = med['disease_name'] ?? '';
 
                   return GestureDetector(
                     onTap: () =>
@@ -486,7 +487,21 @@ class _AlarmTriggerScreenState extends State<AlarmTriggerScreen>
                                     decoration: isSelected ? null : null,
                                   ),
                                 ),
-                                const SizedBox(height: 4),
+                                if (disease.toString().isNotEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.only(
+                                      top: 2.0,
+                                      bottom: 2.0,
+                                    ),
+                                    child: Text(
+                                      disease,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: Colors.blueGrey.shade400,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
                                 Text(
                                   '$dose dose(s)',
                                   style: TextStyle(

@@ -69,34 +69,97 @@ class SyncService {
       return;
     }
 
-    print('📤 Pushing ${pendingChanges.length} pending changes to Firebase...');
-
+    // Coalesce operations per entity (entity_type + entity_id) and keep only the latest
+    // This avoids races like DELETE followed by UPDATE for the same alarm which recreates it on server.
+    final Map<String, Map<String, dynamic>> latestByEntity =
+        {}; // key -> change
     for (var change in pendingChanges) {
+      final entityType = change['entity_type'] as String;
+      final entityId = change['entity_id'] as String;
+      final key = '$entityType|$entityId';
+      // Overwrite previous with later one (pendingChanges ordered by timestamp ASC)
+      latestByEntity[key] = change;
+    }
+
+    final coalesced = latestByEntity.values.toList();
+    print(
+      '📤 Pushing ${coalesced.length} coalesced pending changes to Firebase (from ${pendingChanges.length} original)...',
+    );
+
+    for (var change in coalesced) {
       try {
-        final operationType = change['operation_type'] as String;
         final entityType = change['entity_type'] as String;
         final entityId = change['entity_id'] as String;
-        final entityDataStr = change['entity_data'] as String?;
 
-        if (operationType == 'INSERT') {
-          await _handleInsert(uid, entityType, entityId, entityDataStr);
-        } else if (operationType == 'UPDATE') {
-          await _handleUpdate(uid, entityType, entityId, entityDataStr);
-        } else if (operationType == 'DELETE') {
-          await _handleDelete(uid, entityType, entityId);
-        }
-
-        // Mark as processed in queue
-        await OfflineQueueService.markProcessed(change['id'] as int);
-
-        // Mark entity as synced in local DB
+        // Use local DB as the source of truth: if the entity currently exists locally,
+        // push its current data as an UPDATE. If it does not exist locally, push DELETE.
         if (entityType == 'MEDICINE') {
-          await LocalDB.markMedicineSynced(entityId);
+          final localMed = await LocalDB.getMedicineById(entityId);
+          if (localMed != null) {
+            // Push current medicine data
+            final data = Map<String, dynamic>.from(localMed);
+            await FirebaseFirestore.instance
+                .collection('Users')
+                .doc(uid)
+                .collection('medicines')
+                .doc(entityId)
+                .set({
+                  ...data,
+                  'updatedAt': FieldValue.serverTimestamp(),
+                }, SetOptions(merge: true));
+            await LocalDB.markMedicineSynced(entityId);
+            print('✓ Synced UPDATE MEDICINE: $entityId');
+          } else {
+            // Medicine deleted locally → delete on server
+            await _handleDelete(uid, 'MEDICINE', entityId);
+            print('✓ Synced DELETE MEDICINE: $entityId');
+          }
         } else if (entityType == 'ALARM') {
-          await LocalDB.markAlarmSynced(entityId);
+          final localAlarm = await LocalDB.getAlarmById(entityId);
+          if (localAlarm != null) {
+            // Find parent medId for alarm
+            final medId = localAlarm['medId']?.toString() ?? '';
+            if (medId.isNotEmpty) {
+              final data = Map<String, dynamic>.from(localAlarm);
+              await FirebaseFirestore.instance
+                  .collection('Users')
+                  .doc(uid)
+                  .collection('medicines')
+                  .doc(medId)
+                  .collection('alarms')
+                  .doc(entityId)
+                  .set({
+                    ...data,
+                    'updatedAt': FieldValue.serverTimestamp(),
+                  }, SetOptions(merge: true));
+              await LocalDB.markAlarmSynced(entityId);
+              print('✓ Synced UPDATE ALARM: $entityId');
+            } else {
+              print(
+                '⚠️ Skipping ALARM update for $entityId: missing medId locally',
+              );
+            }
+          } else {
+            // Alarm deleted locally → delete on server
+            await _handleDelete(uid, 'ALARM', entityId);
+            print('✓ Synced DELETE ALARM: $entityId');
+          }
+        } else {
+          // Unknown entity type: fallback to existing behavior
+          final operationType = change['operation_type'] as String;
+          final entityDataStr = change['entity_data'] as String?;
+          if (operationType == 'INSERT') {
+            await _handleInsert(uid, entityType, entityId, entityDataStr);
+          } else if (operationType == 'UPDATE') {
+            await _handleUpdate(uid, entityType, entityId, entityDataStr);
+          } else if (operationType == 'DELETE') {
+            await _handleDelete(uid, entityType, entityId);
+          }
         }
 
-        print('✓ Synced $operationType $entityType: $entityId');
+        // Mark as processed in queue using the original queue id if present
+        final queuedId = change['id'] as int?;
+        if (queuedId != null) await OfflineQueueService.markProcessed(queuedId);
       } catch (e) {
         print(
           '✗ Failed to sync ${change['operation_type']} ${change['entity_type']}: $e',

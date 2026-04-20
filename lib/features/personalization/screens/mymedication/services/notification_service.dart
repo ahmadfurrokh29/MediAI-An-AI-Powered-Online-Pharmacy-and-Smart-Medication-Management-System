@@ -380,15 +380,21 @@ class NotificationService {
           if (alarm['time_hour'] == targetHour &&
               alarm['time_minute'] == targetMinute &&
               (alarm['isActive'] == 1 || alarm['isActive'] == true)) {
-            medicinesToTakeNow.add({
-              'medId': med['medId'],
-              'medicine_name': med['medicine_name'],
-              'specific_dose': alarm['specific_dose'],
-              'chronic': med['chronic'],
-              'alarmId': alarm['alarmId'],
-              'time_hour': targetHour,
-              'time_minute': targetMinute,
-            });
+            // Only add if the frequency for this slot is > 0 (dose > 0)
+            final dose =
+                int.tryParse(alarm['specific_dose']?.toString() ?? '1') ?? 1;
+            if (dose > 0) {
+              medicinesToTakeNow.add({
+                'medId': med['medId'],
+                'medicine_name': med['medicine_name'],
+                'disease_name': med['disease_name'],
+                'specific_dose': alarm['specific_dose'],
+                'chronic': med['chronic'],
+                'alarmId': alarm['alarmId'],
+                'time_hour': targetHour,
+                'time_minute': targetMinute,
+              });
+            }
             break;
           }
         }
@@ -559,6 +565,9 @@ class NotificationService {
     final now = tz.TZDateTime.now(tz.local);
     final today = DateTime(now.year, now.month, now.day);
 
+    // Debug log for alarmId and hashCode
+    debugPrint('SCHEDULING ALARM: id=$id, id+1=${id + 1}');
+
     // Cancel any previously scheduled notifications for this slot
     await _notificationsPlugin.cancel(id: id);
     await _notificationsPlugin.cancel(id: id + 1);
@@ -667,6 +676,7 @@ class NotificationService {
 
   // 4. CANCEL ALARM — cancels both the recurring ID and its future-one-time twin
   static Future<void> cancelAlarm(int id) async {
+    debugPrint('CANCELLING ALARM: id=$id, id+1=${id + 1}');
     await _notificationsPlugin.cancel(id: id);
     await _notificationsPlugin.cancel(id: id + 1);
     print("🗑️ Cancelled notifications: ID $id and ID ${id + 1}");
@@ -731,7 +741,8 @@ class NotificationService {
           isLowOrOut = true;
         } else {
           if (!isChronic) {
-            int totalDoses = int.tryParse(med['total_no_of_doses'].toString()) ?? 0;
+            int totalDoses =
+                int.tryParse(med['total_no_of_doses'].toString()) ?? 0;
             if (currentStock >= totalDoses) continue;
           }
           String freqStr = (med['frequency'] ?? '')
@@ -886,7 +897,7 @@ class NotificationService {
 
       DateTime? earliestStart;
       for (final m in meds) {
-        final sd = m['startDate'] as DateTime;
+        final sd = m['startDate'] as DateTime? ?? today;
         if (earliestStart == null || sd.isBefore(earliestStart)) {
           earliestStart = sd;
         }
@@ -913,8 +924,9 @@ class NotificationService {
     Map<String, List<Map<String, dynamic>>> dayTimeGroups = {};
 
     for (final e in durationEntries) {
-      final startDate = e['startDate'] as DateTime;
-      final endDate = e['endDate'] as DateTime;
+      final startDate = e['startDate'] as DateTime? ?? today;
+      final endDate = e['endDate'] as DateTime?;
+      if (endDate == null) continue;
       final hour = e['hour'] as int;
       final minute = e['minute'] as int;
 

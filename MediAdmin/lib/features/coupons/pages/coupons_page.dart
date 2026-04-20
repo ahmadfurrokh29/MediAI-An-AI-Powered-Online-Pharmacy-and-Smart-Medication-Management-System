@@ -68,17 +68,30 @@ class _CouponsPageState extends State<CouponsPage> {
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 14,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
                   ),
                   onPressed: widget.onCreatePressed,
-                  child: const Text("Create New Coupon", style: TextStyle(color: Colors.white)),
+                  child: const Text(
+                    "Create New Coupon",
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
                 const SizedBox(width: 20),
-                Obx(() => Text(
-                  'Total Coupons: ${controller.coupons.length}',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                )),
+                Obx(
+                  () => Text(
+                    'Total Coupons: ${controller.coupons.length}',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
               ],
             ),
             Row(
@@ -115,7 +128,9 @@ class _CouponsPageState extends State<CouponsPage> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(20),
-              boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 8)],
+              boxShadow: const [
+                BoxShadow(color: Colors.black12, blurRadius: 8),
+              ],
             ),
             child: Obx(() {
               if (controller.isLoading.value) {
@@ -131,7 +146,9 @@ class _CouponsPageState extends State<CouponsPage> {
                   child: DataTable(
                     columnSpacing: 50,
                     horizontalMargin: 20,
-                    headingRowColor: WidgetStateProperty.all(Colors.grey.shade100),
+                    headingRowColor: WidgetStateProperty.all(
+                      Colors.grey.shade100,
+                    ),
                     columns: const [
                       DataColumn(label: Text("Coupon Code")),
                       DataColumn(label: Text("Discount")),
@@ -145,54 +162,90 @@ class _CouponsPageState extends State<CouponsPage> {
                     rows: filtered.map((coupon) {
                       return DataRow(
                         cells: [
-                          DataCell(Text(coupon.code, style: const TextStyle(fontWeight: FontWeight.w500))),
-                          DataCell(Text(coupon.discountValue.toString())),
-                          DataCell(Chip(
-                            label: Text(coupon.type, style: const TextStyle(fontSize: 12)),
-                            backgroundColor: coupon.type == 'FLAT' ? Colors.green.shade50 : Colors.blue.shade50,
-                          )),
-                          DataCell(SizedBox(
-                            width: 150,
-                            child: Text(
-                              coupon.description.isEmpty ? '—' : coupon.description,
-                              overflow: TextOverflow.ellipsis,
+                          DataCell(
+                            Text(
+                              coupon.code,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
-                          )),
-                          DataCell(Row(
-                            children: [
-                              Container(
-                                width: 8, height: 8,
-                                decoration: BoxDecoration(
-                                  color: coupon.isActive ? Colors.green : Colors.red,
-                                  shape: BoxShape.circle,
-                                ),
+                          ),
+                          DataCell(Text(coupon.discountValue.toString())),
+                          DataCell(
+                            Chip(
+                              label: Text(
+                                coupon.type,
+                                style: const TextStyle(fontSize: 12),
                               ),
-                              const SizedBox(width: 8),
-                              Text(
-                                coupon.isActive ? "Active" : "Inactive",
-                                style: TextStyle(
-                                  color: coupon.isActive ? Colors.green : Colors.red,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                              backgroundColor: coupon.type == 'FLAT'
+                                  ? Colors.green.shade50
+                                  : Colors.blue.shade50,
+                            ),
+                          ),
+                          DataCell(
+                            SizedBox(
+                              width: 150,
+                              child: Text(
+                                coupon.description.isEmpty
+                                    ? '—'
+                                    : coupon.description,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                            ],
-                          )),
+                            ),
+                          ),
+                          DataCell(
+                            Row(
+                              children: [
+                                Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: coupon.isActive
+                                        ? Colors.green
+                                        : Colors.red,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  coupon.isActive ? "Active" : "Inactive",
+                                  style: TextStyle(
+                                    color: coupon.isActive
+                                        ? Colors.green
+                                        : Colors.red,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                           DataCell(Text(_formatDate(coupon.startDate))),
                           DataCell(Text(_formatDate(coupon.endDate))),
-                          DataCell(Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.edit, color: Color(0xFF4299E1)),
-                                tooltip: 'Edit Coupon',
-                                onPressed: () => widget.onViewPressed(_couponToMap(coupon)),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.delete, color: Colors.red),
-                                onPressed: () => _showDeleteConfirmation(context, coupon),
-                              ),
-                            ],
-                          )),
+                          DataCell(
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.edit,
+                                    color: Color(0xFF4299E1),
+                                  ),
+                                  tooltip: 'Edit Coupon',
+                                  onPressed: () => widget.onViewPressed(
+                                    _couponToMap(coupon),
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.delete,
+                                    color: Colors.red,
+                                  ),
+                                  onPressed: () =>
+                                      _showDeleteConfirmation(context, coupon),
+                                ),
+                              ],
+                            ),
+                          ),
                         ],
                       );
                     }).toList(),
@@ -203,10 +256,12 @@ class _CouponsPageState extends State<CouponsPage> {
           ),
         ),
         const SizedBox(height: 10),
-        Obx(() => Text(
-          "Showing ${controller.filteredCoupons.length} of ${controller.coupons.length} Coupons",
-          style: const TextStyle(color: Colors.grey, fontSize: 13),
-        )),
+        Obx(
+          () => Text(
+            "Showing ${controller.filteredCoupons.length} of ${controller.coupons.length} Coupons",
+            style: const TextStyle(color: Colors.grey, fontSize: 13),
+          ),
+        ),
       ],
     );
   }
@@ -216,7 +271,9 @@ class _CouponsPageState extends State<CouponsPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Coupon'),
-        content: Text('Are you sure you want to delete coupon "${coupon.code}"?'),
+        content: Text(
+          'Are you sure you want to delete coupon "${coupon.code}"?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),

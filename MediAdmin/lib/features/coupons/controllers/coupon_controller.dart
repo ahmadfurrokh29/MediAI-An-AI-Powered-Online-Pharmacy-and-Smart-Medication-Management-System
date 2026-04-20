@@ -21,10 +21,14 @@ class CouponController extends GetxController {
   List<CouponModel> get filteredCoupons {
     if (searchQuery.value.isEmpty) return coupons;
     final q = searchQuery.value.toLowerCase();
-    return coupons.where((c) =>
-        c.code.toLowerCase().contains(q) ||
-        c.description.toLowerCase().contains(q) ||
-        c.type.toLowerCase().contains(q)).toList();
+    return coupons
+        .where(
+          (c) =>
+              c.code.toLowerCase().contains(q) ||
+              c.description.toLowerCase().contains(q) ||
+              c.type.toLowerCase().contains(q),
+        )
+        .toList();
   }
 
   Future<void> fetchCoupons() async {
@@ -41,8 +45,11 @@ class CouponController extends GetxController {
     } catch (e) {
       print('❌ Failed to fetch coupons: $e');
       coupons.value = [];
-      Get.snackbar('Info', 'No coupons found. Create a new coupon.',
-          snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar(
+        'Info',
+        'No coupons found. Create a new coupon.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
     } finally {
       isLoading.value = false;
     }
@@ -53,11 +60,17 @@ class CouponController extends GetxController {
       isLoading.value = true;
       final docRef = await _db.collection('Coupons').add(coupon.toJson());
       coupons.insert(0, coupon.copyWith(id: docRef.id));
-      Get.snackbar('Success', 'Coupon created successfully',
-          snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar(
+        'Success',
+        'Coupon created successfully',
+        snackPosition: SnackPosition.BOTTOM,
+      );
     } catch (e) {
-      Get.snackbar('Error', 'Failed to create coupon: $e',
-          snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar(
+        'Error',
+        'Failed to create coupon: $e',
+        snackPosition: SnackPosition.BOTTOM,
+      );
     } finally {
       isLoading.value = false;
     }
@@ -74,11 +87,17 @@ class CouponController extends GetxController {
       if (index != -1) {
         coupons[index] = coupon.copyWith(updatedAt: DateTime.now());
       }
-      Get.snackbar('Success', 'Coupon updated successfully',
-          snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar(
+        'Success',
+        'Coupon updated successfully',
+        snackPosition: SnackPosition.BOTTOM,
+      );
     } catch (e) {
-      Get.snackbar('Error', 'Failed to update coupon: $e',
-          snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar(
+        'Error',
+        'Failed to update coupon: $e',
+        snackPosition: SnackPosition.BOTTOM,
+      );
     } finally {
       isLoading.value = false;
     }
@@ -95,8 +114,11 @@ class CouponController extends GetxController {
         coupons[index] = coupons[index].copyWith(isActive: isActive);
       }
     } catch (e) {
-      Get.snackbar('Error', 'Failed to update status: $e',
-          snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar(
+        'Error',
+        'Failed to update status: $e',
+        snackPosition: SnackPosition.BOTTOM,
+      );
     }
   }
 
@@ -104,11 +126,17 @@ class CouponController extends GetxController {
     try {
       await _db.collection('Coupons').doc(couponId).delete();
       coupons.removeWhere((c) => c.id == couponId);
-      Get.snackbar('Success', 'Coupon deleted successfully',
-          snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar(
+        'Success',
+        'Coupon deleted successfully',
+        snackPosition: SnackPosition.BOTTOM,
+      );
     } catch (e) {
-      Get.snackbar('Error', 'Failed to delete coupon: $e',
-          snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar(
+        'Error',
+        'Failed to delete coupon: $e',
+        snackPosition: SnackPosition.BOTTOM,
+      );
     }
   }
 

@@ -431,7 +431,11 @@ class _CreateCouponPageState extends State<CreateCouponPage> {
                               final dateFormat = DateFormat('d/M/yyyy');
                               final coupon = CouponModel(
                                 code: couponCodeController.text.trim(),
-                                discountValue: num.tryParse(discountValueController.text.trim()) ?? 0,
+                                discountValue:
+                                    num.tryParse(
+                                      discountValueController.text.trim(),
+                                    ) ??
+                                    0,
                                 type: selectedType ?? 'FLAT',
                                 description: descriptionController.text.trim(),
                                 isActive: isActive,
@@ -441,7 +445,11 @@ class _CreateCouponPageState extends State<CreateCouponPage> {
                                 endDate: endDateController.text.isNotEmpty
                                     ? dateFormat.parse(endDateController.text)
                                     : null,
-                                usageLimit: int.tryParse(usageLimitController.text.trim()) ?? 100,
+                                usageLimit:
+                                    int.tryParse(
+                                      usageLimitController.text.trim(),
+                                    ) ??
+                                    100,
                                 createdAt: DateTime.now(),
                               );
                               await controller.createCoupon(coupon);

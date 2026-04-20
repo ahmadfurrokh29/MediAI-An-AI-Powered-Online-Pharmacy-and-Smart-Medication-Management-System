@@ -60,11 +60,63 @@ class _StockManagementScreenState extends State<StockManagementScreen> {
 
     try {
       final allMedicines = await LocalDB.getUserMedicines(uid);
+
+      // Merge medicines with the same name: sum stock, combine disease names
+      Map<String, Map<String, dynamic>> merged = {};
+      Map<String, List<String>> mergedMedIds = {};
+      for (var med in allMedicines) {
+        final name = (med['medicine_name'] ?? '')
+            .toString()
+            .trim()
+            .toLowerCase();
+        if (merged.containsKey(name)) {
+          // Sum stocks
+          int existingStock =
+              int.tryParse(merged[name]!['available_stock'].toString()) ?? 0;
+          int newStock = int.tryParse(med['available_stock'].toString()) ?? 0;
+          merged[name]!['available_stock'] = existingStock + newStock;
+          // Sum total doses
+          int existingDoses =
+              int.tryParse(merged[name]!['total_no_of_doses'].toString()) ?? 0;
+          int newDoses = int.tryParse(med['total_no_of_doses'].toString()) ?? 0;
+          merged[name]!['total_no_of_doses'] = existingDoses + newDoses;
+          // Append disease name if different
+          final existingDisease = (merged[name]!['disease_name'] ?? '')
+              .toString();
+          final newDisease = (med['disease_name'] ?? '').toString().trim();
+          if (newDisease.isNotEmpty && !existingDisease.contains(newDisease)) {
+            merged[name]!['disease_name'] = existingDisease.isEmpty
+                ? newDisease
+                : '$existingDisease, $newDisease';
+          }
+          // If any entry is chronic, mark as chronic
+          if (med['chronic'] == 1 || med['chronic'] == true) {
+            merged[name]!['chronic'] = 1;
+          }
+          // Keep highest alert_before_days
+          int existingAlert =
+              int.tryParse(merged[name]!['alert_before_days'].toString()) ?? 0;
+          int newAlert = int.tryParse(med['alert_before_days'].toString()) ?? 0;
+          if (newAlert > existingAlert)
+            merged[name]!['alert_before_days'] = newAlert;
+          mergedMedIds[name]!.add(med['medId'].toString());
+        } else {
+          merged[name] = Map<String, dynamic>.from(med);
+          mergedMedIds[name] = [med['medId'].toString()];
+        }
+      }
+
       List<Map<String, dynamic>> tempOut = [];
       List<Map<String, dynamic>> tempLow = [];
       List<Map<String, dynamic>> tempNormal = [];
 
-      for (var med in allMedicines) {
+      for (var med in merged.values) {
+        // Attach all medIds for this merged entry
+        final name = (med['medicine_name'] ?? '')
+            .toString()
+            .trim()
+            .toLowerCase();
+        med['_allMedIds'] = mergedMedIds[name] ?? [med['medId'].toString()];
         int currentStock = int.tryParse(med['available_stock'].toString()) ?? 0;
         int alertDays = int.tryParse(med['alert_before_days'].toString()) ?? 0;
         bool isChronic = med['chronic'] == 1 || med['chronic'] == true;
@@ -84,7 +136,8 @@ class _StockManagementScreenState extends State<StockManagementScreen> {
         int warningThreshold = freq * alertDays;
 
         if (!isChronic) {
-          int totalDoses = int.tryParse(med['total_no_of_doses'].toString()) ?? 0;
+          int totalDoses =
+              int.tryParse(med['total_no_of_doses'].toString()) ?? 0;
           // Non-chronic: if stock covers full course, always normal
           if (currentStock >= totalDoses) {
             tempNormal.add(med);
@@ -111,22 +164,31 @@ class _StockManagementScreenState extends State<StockManagementScreen> {
     }
   }
 
-  Future<void> _updateStockInDB(
-    String medId,
-    int newStock,
-    int totalDoses,
-  ) async {
+  Future<void> _updateStockInDB(Map<String, dynamic> med, int newStock) async {
     setState(() => isLoading = true);
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid != null) {
       try {
-        await LocalDB.updateMedicineStats(medId, totalDoses, newStock);
-        await OfflineQueueService.queueOperation(
-          type: 'UPDATE',
-          entity: 'MEDICINE',
-          entityId: medId,
-          data: {'available_stock': newStock, 'total_no_of_doses': totalDoses},
+        final allMedIds = List<String>.from(
+          med['_allMedIds'] ?? [med['medId'].toString()],
         );
+        // Distribute stock evenly across underlying entries
+        int stockPerEntry = newStock ~/ allMedIds.length;
+        int remainder = newStock % allMedIds.length;
+        for (int i = 0; i < allMedIds.length; i++) {
+          int entryStock = stockPerEntry + (i < remainder ? 1 : 0);
+          await LocalDB.updateMedicineStats(
+            allMedIds[i],
+            med['total_no_of_doses'] ?? 0,
+            entryStock,
+          );
+          await OfflineQueueService.queueOperation(
+            type: 'UPDATE',
+            entity: 'MEDICINE',
+            entityId: allMedIds[i],
+            data: {'available_stock': entryStock},
+          );
+        }
         SyncService.trySyncNow();
         await _loadStocks();
         if (mounted)
@@ -208,11 +270,7 @@ class _StockManagementScreenState extends State<StockManagementScreen> {
             onPressed: () {
               int val = int.tryParse(stockController.text) ?? 0;
               Navigator.pop(ctx);
-              _updateStockInDB(
-                med['medId'],
-                val,
-                med['total_no_of_doses'] ?? 0,
-              );
+              _updateStockInDB(med, val);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: MColors.primary,

@@ -47,11 +47,35 @@ class _MMyMedicalHistoryScreenState extends State<MMyMedicalHistoryScreen> {
       final isChronic = med['chronic'] == 1;
       final disease = (med['disease_name'] ?? '').toString().trim();
       final key = disease.isEmpty ? 'General' : disease;
+      final target = isChronic ? chronic : nonChronic;
 
-      if (isChronic) {
-        chronic.putIfAbsent(key, () => []).add(med);
+      target.putIfAbsent(key, () => []);
+      // Merge if same medicine name already exists under this disease
+      final medName = (med['medicine_name'] ?? '')
+          .toString()
+          .trim()
+          .toLowerCase();
+      final existingIdx = target[key]!.indexWhere(
+        (m) =>
+            (m['medicine_name'] ?? '').toString().trim().toLowerCase() ==
+            medName,
+      );
+      if (existingIdx != -1) {
+        // Merge: sum stock, keep existing entry, store all medIds
+        final existing = target[key]![existingIdx];
+        int existingStock =
+            int.tryParse(existing['available_stock'].toString()) ?? 0;
+        int newStock = int.tryParse(med['available_stock'].toString()) ?? 0;
+        existing['available_stock'] = existingStock + newStock;
+        List<String> ids = List<String>.from(
+          existing['_allMedIds'] ?? [existing['medId'].toString()],
+        );
+        ids.add(med['medId'].toString());
+        existing['_allMedIds'] = ids;
       } else {
-        nonChronic.putIfAbsent(key, () => []).add(med);
+        final copy = Map<String, dynamic>.from(med);
+        copy['_allMedIds'] = [med['medId'].toString()];
+        target[key]!.add(copy);
       }
     }
 
@@ -62,7 +86,7 @@ class _MMyMedicalHistoryScreenState extends State<MMyMedicalHistoryScreen> {
     });
   }
 
-  Future<void> _deleteMedicine(String medId) async {
+  Future<void> _deleteMedicine(String medId, {List<String>? allMedIds}) async {
     final confirm =
         await showDialog<bool>(
           context: context,
@@ -92,16 +116,19 @@ class _MMyMedicalHistoryScreenState extends State<MMyMedicalHistoryScreen> {
         false;
     if (!confirm) return;
 
-    final alarms = await LocalDB.getMedicineAlarms(medId);
-    await LocalDB.deleteMedicineComplete(medId);
-    await OfflineQueueService.queueOperation(
-      type: 'DELETE',
-      entity: 'MEDICINE',
-      entityId: medId,
-    );
-    for (var a in alarms) {
-      final aid = a['alarmId']?.toString() ?? '';
-      if (aid.isNotEmpty) await NotificationService.cancelAlarm(aid.hashCode);
+    final idsToDelete = allMedIds ?? [medId];
+    for (var id in idsToDelete) {
+      final alarms = await LocalDB.getMedicineAlarms(id);
+      await LocalDB.deleteMedicineComplete(id);
+      await OfflineQueueService.queueOperation(
+        type: 'DELETE',
+        entity: 'MEDICINE',
+        entityId: id,
+      );
+      for (var a in alarms) {
+        final aid = a['alarmId']?.toString() ?? '';
+        if (aid.isNotEmpty) await NotificationService.cancelAlarm(aid.hashCode);
+      }
     }
     SyncService.trySyncNow();
     _loadData();
@@ -371,7 +398,10 @@ class _MMyMedicalHistoryScreenState extends State<MMyMedicalHistoryScreen> {
               color: Colors.red.shade400,
               size: 20,
             ),
-            onPressed: () => _deleteMedicine(med['medId']),
+            onPressed: () => _deleteMedicine(
+              med['medId'],
+              allMedIds: List<String>.from(med['_allMedIds'] ?? [med['medId']]),
+            ),
           ),
         ],
       ),

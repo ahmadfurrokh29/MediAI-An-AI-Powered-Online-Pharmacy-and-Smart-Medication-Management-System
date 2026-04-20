@@ -61,7 +61,10 @@ class MCategoryTab extends StatelessWidget {
                 // in category tabs use category-filtered count.
                 final int brandCount = categoryId == null
                     ? (brand['productCount'] ?? 0) as int
-                    : controller.productCountForBrandInCategory(brandName, categoryName!);
+                    : controller.productCountForBrandInCategory(
+                        brandName,
+                        categoryName!,
+                      );
 
                 final products = controller.productsForBrand(
                   brandName,

@@ -453,7 +453,11 @@ class _UpdateCouponPageState extends State<UpdateCouponPage> {
                               final coupon = CouponModel(
                                 id: widget.coupon['id'] ?? '',
                                 code: couponCodeController.text.trim(),
-                                discountValue: num.tryParse(discountValueController.text.trim()) ?? 0,
+                                discountValue:
+                                    num.tryParse(
+                                      discountValueController.text.trim(),
+                                    ) ??
+                                    0,
                                 type: widget.coupon['type'] ?? 'FLAT',
                                 description: descriptionController.text.trim(),
                                 isActive: isActive,
@@ -463,7 +467,11 @@ class _UpdateCouponPageState extends State<UpdateCouponPage> {
                                 endDate: endDateController.text.isNotEmpty
                                     ? dateFormat.parse(endDateController.text)
                                     : null,
-                                usageLimit: int.tryParse(usageLimitController.text.trim()) ?? 100,
+                                usageLimit:
+                                    int.tryParse(
+                                      usageLimitController.text.trim(),
+                                    ) ??
+                                    100,
                               );
                               await controller.updateCoupon(coupon);
                               widget.onBack();

@@ -65,7 +65,9 @@ class CouponModel {
       'StartDate': startDate != null ? Timestamp.fromDate(startDate!) : null,
       'EndDate': endDate != null ? Timestamp.fromDate(endDate!) : null,
       'UsageLimit': usageLimit,
-      'CreatedAt': createdAt != null ? Timestamp.fromDate(createdAt!) : FieldValue.serverTimestamp(),
+      'CreatedAt': createdAt != null
+          ? Timestamp.fromDate(createdAt!)
+          : FieldValue.serverTimestamp(),
       'UpdatedAt': Timestamp.now(),
     };
   }
