@@ -1,5 +1,11 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:typed_data';
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:html' as html;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../services/cloudinary_service.dart';
 import '../controllers/category_controller.dart';
 import '../models/category_model.dart';
 
@@ -18,26 +24,297 @@ class _CreateCategoryPageState extends State<CreateCategoryPage> {
   final controller = Get.find<CategoryController>();
   bool featured = false;
 
+  // ── Icon image state ───────────────────────────────────────────────────────
+  Uint8List? _iconBytes;
+  String? _iconUrl;
+  String? _iconPublicId;
+  bool _isUploadingIcon = false;
+
+  // ── Banner image state ─────────────────────────────────────────────────────
+  Uint8List? _bannerBytes;
+  String? _bannerUrl;
+  String? _bannerPublicId;
+  bool _isUploadingBanner = false;
+
   @override
   void dispose() {
     _nameController.dispose();
     super.dispose();
   }
 
-  void _handleCreate() {
-    if (_formKey.currentState!.validate()) {
-      final category = CategoryModel(
-        id: '',
-        name: _nameController.text.trim(),
-        image: '',
-        isFeatured: featured,
-        isActive: true,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+  // ── Generic file picker + Cloudinary upload ────────────────────────────────
+  Future<void> _pickAndUpload({
+    required String folder,
+    required void Function(Uint8List bytes) onPicked,
+    required void Function(String url, String publicId) onUploaded,
+    required void Function() onUploadStart,
+    required void Function() onUploadEnd,
+  }) async {
+    final input = html.FileUploadInputElement()
+      ..accept = 'image/png,image/jpeg,image/jpg,image/webp'
+      ..multiple = false;
+    html.document.body!.append(input);
+
+    final changeCompleter = Completer<List<html.File>?>();
+    input.onChange.listen((_) {
+      final files = input.files;
+      if (!changeCompleter.isCompleted) {
+        changeCompleter.complete(
+          (files != null && files.isNotEmpty) ? files : null,
+        );
+      }
+    });
+    input.click();
+
+    final files = await changeCompleter.future;
+    input.remove();
+    if (files == null) return;
+
+    final htmlFile = files.first;
+    final readerCompleter = Completer<String>();
+    final reader = html.FileReader();
+    reader.onLoad.listen((_) {
+      if (!readerCompleter.isCompleted) {
+        readerCompleter.complete(reader.result as String);
+      }
+    });
+    reader.onError.listen((_) {
+      if (!readerCompleter.isCompleted) {
+        readerCompleter.completeError('FileReader error');
+      }
+    });
+    reader.readAsDataUrl(htmlFile);
+
+    final dataUrl = await readerCompleter.future;
+    final bytes = base64Decode(dataUrl.split(',').last);
+
+    if (mounted) {
+      onPicked(bytes);
+      onUploadStart();
+    }
+
+    try {
+      final result = await CloudinaryService.uploadImage(
+        bytes: bytes,
+        fileName: htmlFile.name,
+        folder: folder,
+      );
+      if (mounted) onUploaded(result.url, result.publicId);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Upload failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) onUploadEnd();
+    }
+  }
+
+  Future<void> _pickIcon() => _pickAndUpload(
+        folder: 'categories/icons',
+        onPicked: (bytes) => setState(() {
+          _iconBytes = bytes;
+          _iconUrl = null;
+          _iconPublicId = null;
+        }),
+        onUploadStart: () => setState(() => _isUploadingIcon = true),
+        onUploaded: (url, pid) => setState(() {
+          _iconUrl = url;
+          _iconPublicId = pid;
+        }),
+        onUploadEnd: () => setState(() => _isUploadingIcon = false),
       );
 
-      controller.createCategory(category);
+  Future<void> _pickBanner() => _pickAndUpload(
+        folder: 'categories/banners',
+        onPicked: (bytes) => setState(() {
+          _bannerBytes = bytes;
+          _bannerUrl = null;
+          _bannerPublicId = null;
+        }),
+        onUploadStart: () => setState(() => _isUploadingBanner = true),
+        onUploaded: (url, pid) => setState(() {
+          _bannerUrl = url;
+          _bannerPublicId = pid;
+        }),
+        onUploadEnd: () => setState(() => _isUploadingBanner = false),
+      );
+
+  // ── Create ─────────────────────────────────────────────────────────────────
+  void _handleCreate() {
+    if (!_formKey.currentState!.validate()) return;
+    if (_isUploadingIcon || _isUploadingBanner) {
+      Get.snackbar('Please wait', 'Images are still uploading…');
+      return;
     }
+
+    final category = CategoryModel(
+      id: '',
+      name: _nameController.text.trim(),
+      image: _iconUrl ?? '',
+      bannerImage: _bannerUrl ?? '',
+      imagePublicId: _iconPublicId ?? '',
+      bannerImagePublicId: _bannerPublicId ?? '',
+      isFeatured: featured,
+      isActive: true,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+
+    controller.createCategory(category);
+  }
+
+  // ── Image upload box widget ────────────────────────────────────────────────
+  Widget _imageUploadBox({
+    required String label,
+    required String hint,
+    required Uint8List? bytes,
+    required String? uploadedUrl,
+    required bool uploading,
+    required VoidCallback onTap,
+    required double aspectRatio,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label,
+            style:
+                const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+        const SizedBox(height: 4),
+        Text(hint,
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+        const SizedBox(height: 8),
+        AspectRatio(
+          aspectRatio: aspectRatio,
+          child: GestureDetector(
+            onTap: uploading ? null : onTap,
+            child: MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF7FAFC),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: uploadedUrl != null
+                        ? const Color(0xFF48BB78)
+                        : bytes != null
+                            ? const Color(0xFF4299E1)
+                            : const Color(0xFFE2E8F0),
+                    width: 2,
+                  ),
+                ),
+                child: uploading
+                    ? const Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            CircularProgressIndicator(),
+                            SizedBox(height: 8),
+                            Text('Uploading…'),
+                          ],
+                        ),
+                      )
+                    : bytes != null
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                Image.memory(bytes, fit: BoxFit.cover),
+                                Positioned(
+                                  top: 6,
+                                  right: 6,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: uploadedUrl != null
+                                          ? Colors.green
+                                          : Colors.orange,
+                                      borderRadius:
+                                          BorderRadius.circular(20),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          uploadedUrl != null
+                                              ? Icons.check
+                                              : Icons.hourglass_top,
+                                          color: Colors.white,
+                                          size: 12,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          uploadedUrl != null
+                                              ? 'Uploaded'
+                                              : 'Processing…',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 11,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                Positioned(
+                                  bottom: 6,
+                                  right: 6,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black54,
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: const Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.edit,
+                                            color: Colors.white, size: 11),
+                                        SizedBox(width: 3),
+                                        Text(
+                                          'Click to change',
+                                          style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 10),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.add_photo_alternate_outlined,
+                                size: 40,
+                                color: Color(0xFF4299E1),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Click to upload',
+                                style: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -45,7 +322,7 @@ class _CreateCategoryPageState extends State<CreateCategoryPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 🔹 Back Row
+        // Back row
         Row(
           children: [
             IconButton(
@@ -54,7 +331,7 @@ class _CreateCategoryPageState extends State<CreateCategoryPage> {
             ),
             const SizedBox(width: 10),
             const Text(
-              "Create Category",
+              'Create Category',
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
           ],
@@ -62,95 +339,140 @@ class _CreateCategoryPageState extends State<CreateCategoryPage> {
 
         const SizedBox(height: 30),
 
-        Center(
-          child: Container(
-            width: 600,
-            padding: const EdgeInsets.all(30),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: const [
-                BoxShadow(color: Colors.black12, blurRadius: 10),
-              ],
-            ),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text("Category Name"),
-                  const SizedBox(height: 8),
-
-                  TextFormField(
-                    controller: _nameController,
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Please enter category name';
-                      }
-                      return null;
-                    },
-                    decoration: InputDecoration(
-                      hintText: 'Enter category name',
-                      filled: true,
-                      fillColor: Colors.grey.shade100,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  Row(
+        Expanded(
+          child: SingleChildScrollView(
+            child: Center(
+              child: Container(
+                width: 700,
+                padding: const EdgeInsets.all(30),
+                margin: const EdgeInsets.only(bottom: 30),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: const [
+                    BoxShadow(color: Colors.black12, blurRadius: 10),
+                  ],
+                ),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text("Featured"),
-                      const SizedBox(width: 20),
-                      Switch(
-                        value: featured,
-                        activeThumbColor: Colors.green, // GREEN SWITCH
-                        onChanged: (val) {
-                          setState(() {
-                            featured = val;
-                          });
-                        },
+                      // ── Category Name ──────────────────────────────────
+                      const Text(
+                        'Category Name',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _nameController,
+                        validator: (v) => (v == null || v.trim().isEmpty)
+                            ? 'Please enter category name'
+                            : null,
+                        decoration: InputDecoration(
+                          hintText: 'Enter category name',
+                          filled: true,
+                          fillColor: Colors.grey.shade100,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // ── Image uploads ──────────────────────────────────
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Category Icon (1:1)
+                          Expanded(
+                            child: _imageUploadBox(
+                              label: 'Category Icon',
+                              hint:
+                                  'Square image shown on Home categories list',
+                              bytes: _iconBytes,
+                              uploadedUrl: _iconUrl,
+                              uploading: _isUploadingIcon,
+                              onTap: _pickIcon,
+                              aspectRatio: 1,
+                            ),
+                          ),
+                          const SizedBox(width: 20),
+                          // Category Banner (16:9)
+                          Expanded(
+                            flex: 2,
+                            child: _imageUploadBox(
+                              label: 'Category Banner',
+                              hint:
+                                  'Wide banner shown when category is opened (16:9)',
+                              bytes: _bannerBytes,
+                              uploadedUrl: _bannerUrl,
+                              uploading: _isUploadingBanner,
+                              onTap: _pickBanner,
+                              aspectRatio: 16 / 9,
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // ── Featured toggle ────────────────────────────────
+                      Row(
+                        children: [
+                          const Text(
+                            'Featured',
+                            style: TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(width: 20),
+                          Switch(
+                            value: featured,
+                            activeThumbColor: Colors.green,
+                            onChanged: (val) =>
+                                setState(() => featured = val),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 30),
+
+                      // ── Create button ──────────────────────────────────
+                      Obx(
+                        () => SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green,
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                            ),
+                            onPressed: controller.isLoading.value
+                                ? null
+                                : _handleCreate,
+                            child: controller.isLoading.value
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Text(
+                                    'Create',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                          ),
+                        ),
                       ),
                     ],
                   ),
-
-                  const SizedBox(height: 30),
-
-                  Obx(
-                    () => SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                        ),
-                        onPressed: controller.isLoading.value
-                            ? null
-                            : _handleCreate,
-                        child: controller.isLoading.value
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Text(
-                                "Create",
-                                style: TextStyle(color: Colors.white),
-                              ),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ),

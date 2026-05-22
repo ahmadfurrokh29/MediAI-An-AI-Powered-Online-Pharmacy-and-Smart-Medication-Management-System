@@ -209,6 +209,7 @@ class ProductsTable extends StatelessWidget {
                                   'salePrice': product.salePrice,
                                   'stock': product.stock,
                                   'images': product.images,
+                                  'imagePublicIds': product.imagePublicIds,
                                   'categoryId': product.categoryId,
                                   'categoryName': product.categoryName,
                                   'subcategoryId': product.subcategoryId,

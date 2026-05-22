@@ -1,8 +1,11 @@
+import 'dart:html' as html;
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../categories/controllers/category_controller.dart';
 import '../controllers/brand_controller.dart';
 import '../models/brand_model.dart';
+import '../../../services/cloudinary_service.dart';
 
 class CreateBrandPage extends StatefulWidget {
   final VoidCallback onBack;
@@ -19,6 +22,8 @@ class _CreateBrandPageState extends State<CreateBrandPage> {
   bool featured = false;
   bool active = true;
   bool isLoading = false;
+  Uint8List? _pickedImageBytes;
+  String? _pickedImageName;
 
   final Set<String> selectedCategoryIds = {};
 
@@ -29,6 +34,21 @@ class _CreateBrandPageState extends State<CreateBrandPage> {
   void dispose() {
     _nameController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    final uploadInput = html.FileUploadInputElement()..accept = 'image/*';
+    uploadInput.click();
+    await uploadInput.onChange.first;
+    if (uploadInput.files!.isEmpty) return;
+    final file = uploadInput.files![0];
+    final reader = html.FileReader();
+    reader.readAsArrayBuffer(file);
+    await reader.onLoad.first;
+    setState(() {
+      _pickedImageBytes = reader.result as Uint8List;
+      _pickedImageName = file.name;
+    });
   }
 
   Future<void> _createBrand() async {
@@ -49,10 +69,23 @@ class _CreateBrandPageState extends State<CreateBrandPage> {
     });
 
     try {
+      String imageUrl = '';
+      String pickedPublicId = '';
+      if (_pickedImageBytes != null) {
+        final result = await CloudinaryService.uploadImage(
+          bytes: _pickedImageBytes!,
+          fileName: _pickedImageName ?? 'brand_logo.png',
+          folder: 'brands',
+        );
+        imageUrl = result.url;
+        pickedPublicId = result.publicId;
+      }
+
       final brand = BrandModel(
         id: '',
         name: _nameController.text.trim(),
-        image: '',
+        image: imageUrl,
+        publicId: pickedPublicId,
         categoryIds: selectedCategoryIds.toList(),
         isFeatured: featured,
         isActive: active,
@@ -271,31 +304,47 @@ class _CreateBrandPageState extends State<CreateBrandPage> {
                       ),
                       const SizedBox(height: 10),
 
-                      Container(
-                        height: 100,
-                        width: 100,
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.shade300),
-                          borderRadius: BorderRadius.circular(16),
-                          color: Colors.grey.shade50,
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(
-                              Icons.upload,
-                              size: 32,
-                              color: Colors.grey,
+                      GestureDetector(
+                        onTap: _pickImage,
+                        child: Container(
+                          height: 100,
+                          width: 100,
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: _pickedImageBytes != null
+                                  ? const Color(0xFF4299E1)
+                                  : Colors.grey.shade300,
+                              width: 2,
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Upload',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                          ],
+                            borderRadius: BorderRadius.circular(16),
+                            color: Colors.grey.shade50,
+                          ),
+                          child: _pickedImageBytes != null
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(14),
+                                  child: Image.memory(
+                                    _pickedImageBytes!,
+                                    fit: BoxFit.cover,
+                                  ),
+                                )
+                              : Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      Icons.upload,
+                                      size: 32,
+                                      color: Colors.grey,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Upload',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                         ),
                       ),
 

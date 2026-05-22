@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
+import '../../../services/cloudinary_service.dart';
 import '../models/product_model.dart';
 
 class ProductController extends GetxController {
@@ -295,6 +296,14 @@ class ProductController extends GetxController {
   // Delete product
   Future<void> deleteProduct(String productId) async {
     try {
+      // 1. Delete images from Cloudinary (best-effort, never blocks Firestore delete)
+      final idx = products.indexWhere((p) => p.id == productId);
+      if (idx != -1) {
+        for (final pid in products[idx].imagePublicIds) {
+          await CloudinaryService.deleteImage(pid);
+        }
+      }
+      // 2. Delete from Firestore
       await _db.collection('Products').doc(productId).delete();
       products.removeWhere((product) => product.id == productId);
 

@@ -63,7 +63,7 @@ class MHomeCategories extends StatelessWidget {
                   categoryName: (cat['name'] as String).isEmpty
                       ? 'Category'
                       : cat['name'] as String,
-                  categoryBannerUrl: cat['image'] as String?,
+                  categoryBannerUrl: cat['bannerImage'] as String?,
                 ),
               ),
             );

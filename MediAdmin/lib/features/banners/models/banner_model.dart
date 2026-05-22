@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class BannerModel {
   final String id;
   final String imageUrl;
+  final String imagePublicId; // Cloudinary public_id for deletion
   final String title;
   final String description;
   final String redirect;
@@ -18,6 +19,7 @@ class BannerModel {
   BannerModel({
     required this.id,
     required this.imageUrl,
+    required this.imagePublicId,
     required this.title,
     required this.description,
     required this.redirect,
@@ -34,6 +36,7 @@ class BannerModel {
   static BannerModel empty() => BannerModel(
     id: '',
     imageUrl: '',
+    imagePublicId: '',
     title: '',
     description: '',
     redirect: '',
@@ -53,6 +56,7 @@ class BannerModel {
   Map<String, dynamic> toJson() {
     return {
       'image': imageUrl,
+      'imagePublicId': imagePublicId,
       'title': title,
       'description': description,
       'redirect': redirect,
@@ -74,6 +78,7 @@ class BannerModel {
       id: doc.id,
       imageUrl: (data['image'] ?? data['imageUrl'] ?? data['ImageUrl'] ?? '')
           .toString(),
+      imagePublicId: (data['imagePublicId'] ?? '').toString(),
       title: (data['title'] ?? data['Title'] ?? '').toString(),
       description: (data['description'] ?? data['Description'] ?? '')
           .toString(),
@@ -92,6 +97,7 @@ class BannerModel {
   BannerModel copyWith({
     String? id,
     String? imageUrl,
+    String? imagePublicId,
     String? title,
     String? description,
     String? redirect,
@@ -107,6 +113,7 @@ class BannerModel {
     return BannerModel(
       id: id ?? this.id,
       imageUrl: imageUrl ?? this.imageUrl,
+      imagePublicId: imagePublicId ?? this.imagePublicId,
       title: title ?? this.title,
       description: description ?? this.description,
       redirect: redirect ?? this.redirect,

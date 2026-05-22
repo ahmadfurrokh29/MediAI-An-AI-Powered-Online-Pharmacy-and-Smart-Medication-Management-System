@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
+import '../../../services/cloudinary_service.dart';
 import '../models/banner_model.dart';
 
 class BannerController extends GetxController {
@@ -105,7 +106,12 @@ class BannerController extends GetxController {
 
   // ── Delete ────────────────────────────────────────────────────────────────
   Future<void> deleteBanner(String bannerId) async {
-    try {
+    try {      // 1. Delete image from Cloudinary (best-effort)
+      final idx = banners.indexWhere((b) => b.id == bannerId);
+      if (idx != -1 && banners[idx].imagePublicId.isNotEmpty) {
+        await CloudinaryService.deleteImage(banners[idx].imagePublicId);
+      }
+      // 2. Delete from Firestore
       await _db.collection('Banners').doc(bannerId).delete();
       banners.removeWhere((b) => b.id == bannerId);
       Get.snackbar(

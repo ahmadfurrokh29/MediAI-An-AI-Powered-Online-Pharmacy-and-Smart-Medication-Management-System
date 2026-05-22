@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'dart:typed_data';
 // ignore: avoid_web_libraries_in_flutter
 import 'dart:html' as html;
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import '../../../services/cloudinary_service.dart';
 import '../controllers/banner_controller.dart';
 import '../models/banner_model.dart';
 
@@ -26,8 +26,7 @@ class _CreateBannerPageState extends State<CreateBannerPage> {
 
   Uint8List? _pickedImageBytes;
   String? _pickedImageName;
-  String? _uploadedImageUrl;
-  bool _isUploadingImage = false;
+  bool _isSaving = false;
 
   bool isActive = true;
   bool isFeatured = false;
@@ -41,13 +40,12 @@ class _CreateBannerPageState extends State<CreateBannerPage> {
     super.dispose();
   }
 
-  /// Pick a PNG/JPEG/JPG image and upload it to Firebase Storage.
-  Future<void> _pickAndUploadImage() async {
+  /// Pick a PNG/JPEG/JPG image file (upload happens only when Create is clicked).
+  Future<void> _pickImage() async {
     final input = html.FileUploadInputElement()
       ..accept = 'image/png,image/jpeg,image/jpg'
       ..multiple = false;
 
-    // Attach to DOM so the browser considers it a trusted interaction
     html.document.body!.append(input);
 
     final changeCompleter = Completer<List<html.File>?>();
@@ -65,11 +63,10 @@ class _CreateBannerPageState extends State<CreateBannerPage> {
     final files = await changeCompleter.future;
     input.remove();
 
-    if (files == null) return; // user cancelled
+    if (files == null) return;
 
     final htmlFile = files.first;
 
-    // Read bytes using readAsDataURL then convert — avoids ByteBuffer cast
     final readerCompleter = Completer<String>();
     final reader = html.FileReader();
     reader.onLoad.listen((_) {
@@ -85,42 +82,13 @@ class _CreateBannerPageState extends State<CreateBannerPage> {
     reader.readAsDataUrl(htmlFile);
 
     final dataUrl = await readerCompleter.future;
-
-    // Convert base64 data URL → Uint8List
-    final base64String = dataUrl.split(',').last;
-    final bytes = base64Decode(base64String);
+    final bytes = base64Decode(dataUrl.split(',').last);
 
     if (mounted) {
       setState(() {
         _pickedImageBytes = bytes;
         _pickedImageName = htmlFile.name;
-        _isUploadingImage = true;
-        _uploadedImageUrl = null;
       });
-    }
-
-    try {
-      final ext = htmlFile.name.split('.').last.toLowerCase();
-      final fileName =
-          'banners/${DateTime.now().millisecondsSinceEpoch}_${htmlFile.name}';
-      final ref = FirebaseStorage.instance.ref().child(fileName);
-      final metadata = SettableMetadata(
-        contentType: ext == 'png' ? 'image/png' : 'image/jpeg',
-      );
-      await ref.putData(bytes, metadata);
-      final url = await ref.getDownloadURL();
-      if (mounted) setState(() => _uploadedImageUrl = url);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Image upload failed: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isUploadingImage = false);
     }
   }
 
@@ -231,7 +199,7 @@ class _CreateBannerPageState extends State<CreateBannerPage> {
                       AspectRatio(
                         aspectRatio: 16 / 9,
                         child: GestureDetector(
-                          onTap: _isUploadingImage ? null : _pickAndUploadImage,
+                          onTap: _isSaving ? null : _pickImage,
                           child: MouseRegion(
                             cursor: SystemMouseCursors.click,
                             child: Container(
@@ -240,26 +208,13 @@ class _CreateBannerPageState extends State<CreateBannerPage> {
                                 color: const Color(0xFFF7FAFC),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: _uploadedImageUrl != null
-                                      ? const Color(0xFF48BB78)
-                                      : _pickedImageBytes != null
+                                  color: _pickedImageBytes != null
                                       ? const Color(0xFF4299E1)
                                       : const Color(0xFFE2E8F0),
                                   width: 2,
                                 ),
                               ),
-                              child: _isUploadingImage
-                                  ? const Center(
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          CircularProgressIndicator(),
-                                          SizedBox(height: 12),
-                                          Text('Uploading image…'),
-                                        ],
-                                      ),
-                                    )
-                                  : _pickedImageBytes != null
+                              child: _pickedImageBytes != null
                                   ? ClipRRect(
                                       borderRadius: BorderRadius.circular(10),
                                       child: Stack(
@@ -268,47 +223,6 @@ class _CreateBannerPageState extends State<CreateBannerPage> {
                                           Image.memory(
                                             _pickedImageBytes!,
                                             fit: BoxFit.cover,
-                                          ),
-                                          // Status badge
-                                          Positioned(
-                                            top: 8,
-                                            right: 8,
-                                            child: Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 10,
-                                                    vertical: 4,
-                                                  ),
-                                              decoration: BoxDecoration(
-                                                color: _uploadedImageUrl != null
-                                                    ? Colors.green
-                                                    : Colors.orange,
-                                                borderRadius:
-                                                    BorderRadius.circular(20),
-                                              ),
-                                              child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Icon(
-                                                    _uploadedImageUrl != null
-                                                        ? Icons.check
-                                                        : Icons.hourglass_top,
-                                                    color: Colors.white,
-                                                    size: 14,
-                                                  ),
-                                                  const SizedBox(width: 4),
-                                                  Text(
-                                                    _uploadedImageUrl != null
-                                                        ? 'Uploaded'
-                                                        : 'Processing…',
-                                                    style: const TextStyle(
-                                                      color: Colors.white,
-                                                      fontSize: 12,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
                                           ),
                                           // File name badge bottom-left
                                           if (_pickedImageName != null)
@@ -403,7 +317,7 @@ class _CreateBannerPageState extends State<CreateBannerPage> {
                                         ),
                                         const SizedBox(height: 16),
                                         OutlinedButton.icon(
-                                          onPressed: _pickAndUploadImage,
+                                          onPressed: _isSaving ? null : _pickImage,
                                           icon: const Icon(Icons.upload),
                                           label: const Text('Browse file'),
                                           style: OutlinedButton.styleFrom(
@@ -674,39 +588,59 @@ class _CreateBannerPageState extends State<CreateBannerPage> {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: () async {
-                            if (_formKey.currentState!.validate()) {
-                              if (_isUploadingImage) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      'Please wait, image is still uploading…',
-                                    ),
-                                  ),
-                                );
-                                return;
-                              }
-                              final banner = BannerModel(
-                                id: '',
-                                imageUrl: _uploadedImageUrl ?? '',
-                                title: bannerTitleController.text.trim(),
-                                description: descriptionController.text.trim(),
-                                redirect: '',
-                                isActive: isActive,
-                                isFeatured: isFeatured,
-                                views: 0,
-                                clicks: 0,
-                                startDate: startDateController.text.trim(),
-                                endDate: endDateController.text.trim(),
-                                createdAt: DateTime.now(),
-                                updatedAt: DateTime.now(),
-                              );
-                              await BannerController.instance.createBanner(
-                                banner,
-                              );
-                              widget.onBack();
-                            }
-                          },
+                          onPressed: _isSaving
+                              ? null
+                              : () async {
+                                  if (!_formKey.currentState!.validate()) return;
+                                  setState(() => _isSaving = true);
+                                  try {
+                                    String imageUrl = '';
+                                    String imagePublicId = '';
+                                    if (_pickedImageBytes != null &&
+                                        _pickedImageName != null) {
+                                      final result =
+                                          await CloudinaryService.uploadImage(
+                                        bytes: _pickedImageBytes!,
+                                        fileName: _pickedImageName!,
+                                        folder: 'banners',
+                                      );
+                                      imageUrl = result.url;
+                                      imagePublicId = result.publicId;
+                                    }
+                                    final banner = BannerModel(
+                                      id: '',
+                                      imageUrl: imageUrl,
+                                      imagePublicId: imagePublicId,
+                                      title: bannerTitleController.text.trim(),
+                                      description:
+                                          descriptionController.text.trim(),
+                                      redirect: '',
+                                      isActive: isActive,
+                                      isFeatured: isFeatured,
+                                      views: 0,
+                                      clicks: 0,
+                                      startDate: startDateController.text.trim(),
+                                      endDate: endDateController.text.trim(),
+                                      createdAt: DateTime.now(),
+                                      updatedAt: DateTime.now(),
+                                    );
+                                    await BannerController.instance.createBanner(
+                                      banner,
+                                    );
+                                    widget.onBack();
+                                  } catch (e) {
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text('Error: $e'),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                    }
+                                  } finally {
+                                    if (mounted) setState(() => _isSaving = false);
+                                  }
+                                },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF4299E1),
                             foregroundColor: Colors.white,
@@ -715,13 +649,22 @@ class _CreateBannerPageState extends State<CreateBannerPage> {
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),
-                          child: const Text(
-                            'Create',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                          child: _isSaving
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Text(
+                                  'Create',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                         ),
                       ),
                     ],

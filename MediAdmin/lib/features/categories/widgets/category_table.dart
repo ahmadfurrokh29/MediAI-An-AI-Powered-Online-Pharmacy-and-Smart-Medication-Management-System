@@ -106,6 +106,10 @@ class CategoryTable extends StatelessWidget {
                                 'id': category.id,
                                 'name': category.name,
                                 'image': category.image,
+                                'bannerImage': category.bannerImage,
+                                'imagePublicId': category.imagePublicId,
+                                'bannerImagePublicId':
+                                    category.bannerImagePublicId,
                                 'isFeatured': category.isFeatured,
                                 'isActive': category.isActive,
                               });

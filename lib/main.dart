@@ -14,7 +14,7 @@ import 'app.dart';
 
 Future<void> main() async {
   // Widget Bindings  
-  final WidgetsBinding widgetsBinding =
+   final WidgetsBinding widgetsBinding =
       WidgetsFlutterBinding.ensureInitialized();
   // todo: Init Local Storage
   await GetStorage.init();

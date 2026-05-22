@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/brand_controller.dart';
+import '../../categories/controllers/category_controller.dart';
 import 'package:intl/intl.dart';
 
 class BrandsTable extends StatelessWidget {
@@ -69,18 +70,51 @@ class BrandsTable extends StatelessWidget {
                     ),
                   ),
                   DataCell(
-                    CircleAvatar(
-                      radius: 14,
-                      backgroundColor: Colors.purple.shade100,
-                      child: Text(
-                        brand.categoryIds.length.toString(),
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.purple.shade900,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
+                    Obx(() {
+                      final catCtrl = Get.find<CategoryController>();
+                      final names = brand.categoryIds.map((id) {
+                        final match = catCtrl.categories
+                            .firstWhereOrNull((c) => c.id == id);
+                        return match?.name ?? id;
+                      }).toList();
+
+                      if (names.isEmpty) {
+                        return Text(
+                          'None',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade500,
+                          ),
+                        );
+                      }
+
+                      return Wrap(
+                        spacing: 4,
+                        runSpacing: 4,
+                        children: names
+                            .map(
+                              (name) => Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.purple.shade100,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  name,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.purple.shade900,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                      );
+                    }),
                   ),
                   DataCell(
                     Switch(
@@ -131,6 +165,7 @@ class BrandsTable extends StatelessWidget {
                                 'id': brand.id,
                                 'name': brand.name,
                                 'image': brand.image,
+                                'publicId': brand.publicId,
                                 'categoryIds': brand.categoryIds,
                                 'isFeatured': brand.isFeatured,
                                 'isActive': brand.isActive,

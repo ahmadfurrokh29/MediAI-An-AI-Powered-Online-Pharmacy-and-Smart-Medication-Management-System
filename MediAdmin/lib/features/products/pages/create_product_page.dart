@@ -1,5 +1,12 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:typed_data';
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:html' as html;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../services/cloudinary_service.dart';
+import '../widgets/product_image_upload_widget.dart';
 import '../../categories/controllers/category_controller.dart';
 import '../../subcategories/controllers/subcategory_controller.dart';
 import '../../brands/controllers/brand_controller.dart';
@@ -23,9 +30,11 @@ class _CreateProductPageState extends State<CreateProductPage> {
   final _priceController = TextEditingController();
   final _salePriceController = TextEditingController();
   final _stockController = TextEditingController();
-  final _imageUrlController = TextEditingController();
 
-  bool isFeatured = false; // For popular products in category
+  /// All product images (picked + uploaded).
+  final List<ProductImageEntry> _images = [];
+
+  bool isFeatured = false;
   bool isActive = true;
   bool isLoading = false;
 
@@ -77,8 +86,87 @@ class _CreateProductPageState extends State<CreateProductPage> {
     _priceController.dispose();
     _salePriceController.dispose();
     _stockController.dispose();
-    _imageUrlController.dispose();
     super.dispose();
+  }
+
+  /// Open browser file picker and upload selected images to Cloudinary.
+  Future<void> _pickAndUploadImages() async {
+    final input = html.FileUploadInputElement()
+      ..accept = 'image/png,image/jpeg,image/jpg,image/webp'
+      ..multiple = true;
+
+    html.document.body!.append(input);
+
+    final completer = Completer<List<html.File>?>();
+    input.onChange.listen((_) {
+      final files = input.files;
+      if (!completer.isCompleted) {
+        completer.complete(
+          (files != null && files.isNotEmpty) ? files : null,
+        );
+      }
+    });
+    input.click();
+
+    final files = await completer.future;
+    input.remove();
+    if (files == null) return;
+
+    for (final htmlFile in files) {
+      // Read bytes via FileReader
+      final readerCompleter = Completer<String>();
+      final reader = html.FileReader();
+      reader.onLoad.listen((_) {
+        if (!readerCompleter.isCompleted) {
+          readerCompleter.complete(reader.result as String);
+        }
+      });
+      reader.onError.listen((_) {
+        if (!readerCompleter.isCompleted) {
+          readerCompleter.completeError('FileReader error');
+        }
+      });
+      reader.readAsDataUrl(htmlFile);
+
+      final dataUrl = await readerCompleter.future;
+      final bytes = base64Decode(dataUrl.split(',').last);
+
+      final entry = ProductImageEntry(
+        bytes: bytes,
+        name: htmlFile.name,
+        uploading: true,
+      );
+      if (mounted) setState(() => _images.add(entry));
+
+      try {
+        final result = await CloudinaryService.uploadImage(
+          bytes: bytes,
+          fileName: htmlFile.name,
+          folder: 'products',
+        );
+        if (mounted) {
+          setState(() {
+            entry.url = result.url;
+            entry.publicId = result.publicId;
+            entry.uploading = false;
+          });
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() => _images.remove(entry));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Upload failed for ${htmlFile.name}: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  void _removeImage(int index) {
+    setState(() => _images.removeAt(index));
   }
 
   Future<void> _createProduct() async {
@@ -132,9 +220,8 @@ class _CreateProductPageState extends State<CreateProductPage> {
             ? 0.0
             : double.parse(_salePriceController.text),
         stock: int.parse(_stockController.text),
-        images: _imageUrlController.text.trim().isNotEmpty
-            ? [_imageUrlController.text.trim()]
-            : [],
+        images: _images.where((e) => e.url != null).map((e) => e.url!).toList(),
+        imagePublicIds: _images.where((e) => e.publicId != null).map((e) => e.publicId!).toList(),
         categoryId: selectedCategoryId!,
         categoryName: category.name,
         subcategoryId: selectedSubcategoryId ?? '',
@@ -657,59 +744,69 @@ class _CreateProductPageState extends State<CreateProductPage> {
 
                       const SizedBox(height: 20),
 
-                      // Product Image URL
-                      const Text(
-                        "Product Image URL",
-                        style: TextStyle(fontWeight: FontWeight.w600),
+                      // ── Product Images Upload ────────────────────────
+                      Row(
+                        children: [
+                          const Text(
+                            'Product Images',
+                            style: TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '(PNG, JPG, JPEG, WebP — up to 5)',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade500,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Paste a direct image link (https://…). This image will be shown in product cards and the product detail page.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade500,
+                      const SizedBox(height: 10),
+                      // Uploaded image grid
+                      if (_images.isNotEmpty)
+                        Wrap(
+                          spacing: 10,
+                          runSpacing: 10,
+                          children: [
+                            for (int i = 0; i < _images.length; i++)
+                              ProductImageThumbnail(
+                                image: _images[i],
+                                onRemove: () => _removeImage(i),
+                                isPrimary: i == 0,
+                              ),
+                          ],
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      TextFormField(
-                        controller: _imageUrlController,
-                        keyboardType: TextInputType.url,
-                        decoration: InputDecoration(
-                          hintText: 'https://example.com/product-image.jpg',
-                          prefixIcon: const Icon(Icons.image_outlined),
-                          filled: true,
-                          fillColor: Colors.grey.shade100,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide.none,
+                      const SizedBox(height: 10),
+                      // Add images button
+                      if (_images.length < 5)
+                        OutlinedButton.icon(
+                          onPressed: _pickAndUploadImages,
+                          icon: const Icon(Icons.add_photo_alternate_outlined),
+                          label: Text(
+                            _images.isEmpty
+                                ? 'Upload Product Images'
+                                : 'Add More Images',
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.green,
+                            side: const BorderSide(color: Colors.green),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 12,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
                         ),
-                        onChanged: (_) => setState(() {}),
-                      ),
-                      // Live preview when a URL is entered
-                      if (_imageUrlController.text.trim().startsWith('http'))
+                      if (_images.isEmpty)
                         Padding(
-                          padding: const EdgeInsets.only(top: 12),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Image.network(
-                              _imageUrlController.text.trim(),
-                              height: 160,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Container(
-                                height: 80,
-                                decoration: BoxDecoration(
-                                  color: Colors.red.shade50,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: const Center(
-                                  child: Text(
-                                    'Invalid image URL',
-                                    style: TextStyle(color: Colors.red),
-                                  ),
-                                ),
-                              ),
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Text(
+                            'First image will be the main thumbnail shown to users.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade500,
                             ),
                           ),
                         ),

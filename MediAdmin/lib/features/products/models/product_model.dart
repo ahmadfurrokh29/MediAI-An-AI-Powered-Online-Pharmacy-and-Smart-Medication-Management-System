@@ -10,6 +10,7 @@ class ProductModel {
   final double salePrice;
   final int stock;
   final List<String> images;
+  final List<String> imagePublicIds; // Cloudinary public_ids for deletion
   final String categoryId;
   final String categoryName;
   final String subcategoryId;
@@ -31,6 +32,7 @@ class ProductModel {
     required this.salePrice,
     required this.stock,
     required this.images,
+    required this.imagePublicIds,
     required this.categoryId,
     required this.categoryName,
     required this.subcategoryId,
@@ -54,6 +56,7 @@ class ProductModel {
     salePrice: 0.0,
     stock: 0,
     images: [],
+    imagePublicIds: [],
     categoryId: '',
     categoryName: '',
     subcategoryId: '',
@@ -77,6 +80,7 @@ class ProductModel {
       'SalePrice': salePrice,
       'Stock': stock,
       'Images': images,
+      'ImagePublicIds': imagePublicIds,
       'CategoryId': categoryId,
       'CategoryName': categoryName,
       'SubcategoryId': subcategoryId,
@@ -105,6 +109,7 @@ class ProductModel {
       salePrice: (data['SalePrice'] ?? 0).toDouble(),
       stock: data['Stock'] ?? 0,
       images: List<String>.from(data['Images'] ?? []),
+      imagePublicIds: List<String>.from(data['ImagePublicIds'] ?? []),
       categoryId: data['CategoryId'] ?? '',
       categoryName: data['CategoryName'] ?? '',
       subcategoryId: data['SubcategoryId'] ?? '',
@@ -129,6 +134,7 @@ class ProductModel {
     double? salePrice,
     int? stock,
     List<String>? images,
+    List<String>? imagePublicIds,
     String? categoryId,
     String? categoryName,
     String? subcategoryId,
@@ -150,6 +156,7 @@ class ProductModel {
       salePrice: salePrice ?? this.salePrice,
       stock: stock ?? this.stock,
       images: images ?? this.images,
+      imagePublicIds: imagePublicIds ?? this.imagePublicIds,
       categoryId: categoryId ?? this.categoryId,
       categoryName: categoryName ?? this.categoryName,
       subcategoryId: subcategoryId ?? this.subcategoryId,

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
 import '../models/brand_model.dart';
+import '../../../services/cloudinary_service.dart';
 
 class BrandController extends GetxController {
   static BrandController get instance => Get.find();
@@ -159,6 +160,11 @@ class BrandController extends GetxController {
   // Delete brand
   Future<void> deleteBrand(String brandId) async {
     try {
+      final brand = brands.firstWhereOrNull((b) => b.id == brandId);
+      if (brand != null && brand.publicId.isNotEmpty) {
+        await CloudinaryService.deleteImage(brand.publicId);
+      }
+
       await _db.collection('Brands').doc(brandId).delete();
       brands.removeWhere((b) => b.id == brandId);
 

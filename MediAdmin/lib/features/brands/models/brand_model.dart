@@ -4,6 +4,7 @@ class BrandModel {
   final String id;
   final String name;
   final String image;
+  final String publicId;
   final List<String> categoryIds;
   final bool isFeatured;
   final bool isActive;
@@ -15,6 +16,7 @@ class BrandModel {
     required this.id,
     required this.name,
     required this.image,
+    this.publicId = '',
     required this.categoryIds,
     required this.isFeatured,
     required this.isActive,
@@ -27,6 +29,7 @@ class BrandModel {
     id: '',
     name: '',
     image: '',
+    publicId: '',
     categoryIds: [],
     isFeatured: false,
     isActive: true,
@@ -39,6 +42,7 @@ class BrandModel {
     return {
       'Name': name,
       'Image': image,
+      'PublicId': publicId,
       'CategoryIds': categoryIds,
       'IsFeatured': isFeatured,
       'IsActive': isActive,
@@ -57,6 +61,7 @@ class BrandModel {
         id: document.id,
         name: data['Name'] ?? '',
         image: data['Image'] ?? '',
+        publicId: data['PublicId'] ?? '',
         categoryIds: List<String>.from(data['CategoryIds'] ?? []),
         isFeatured: data['IsFeatured'] ?? false,
         isActive: data['IsActive'] ?? true,
@@ -75,6 +80,7 @@ class BrandModel {
     String? id,
     String? name,
     String? image,
+    String? publicId,
     List<String>? categoryIds,
     bool? isFeatured,
     bool? isActive,
@@ -86,6 +92,7 @@ class BrandModel {
       id: id ?? this.id,
       name: name ?? this.name,
       image: image ?? this.image,
+      publicId: publicId ?? this.publicId,
       categoryIds: categoryIds ?? this.categoryIds,
       isFeatured: isFeatured ?? this.isFeatured,
       isActive: isActive ?? this.isActive,

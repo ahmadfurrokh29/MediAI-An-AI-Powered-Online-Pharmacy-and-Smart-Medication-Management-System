@@ -25,19 +25,8 @@ class MPromoSlider extends StatelessWidget {
     final controller = Get.find<HomeController>();
 
     return Obx(() {
-      // While loading, show a shimmer-style placeholder
-      if (controller.isLoading.value && controller.activeBanners.isEmpty) {
-        return Container(
-          height: 200,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            color: Colors.grey.shade200,
-          ),
-          child: const Center(child: CircularProgressIndicator()),
-        );
-      }
-
-      // Use Firestore banners if available, else fall back to local assets
+      // Use Firestore banners if available, else fall back to local assets.
+      // We never block on a spinner so the user always sees banners.
       final bool usingFirestore = controller.activeBanners.isNotEmpty;
       final int itemCount = usingFirestore
           ? controller.activeBanners.length

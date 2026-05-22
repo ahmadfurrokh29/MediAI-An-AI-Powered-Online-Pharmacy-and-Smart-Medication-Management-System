@@ -1,8 +1,11 @@
+import 'dart:html' as html;
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../categories/controllers/category_controller.dart';
 import '../controllers/brand_controller.dart';
 import '../models/brand_model.dart';
+import '../../../services/cloudinary_service.dart';
 
 class UpdateBrandPage extends StatefulWidget {
   final VoidCallback onBack;
@@ -21,6 +24,10 @@ class _UpdateBrandPageState extends State<UpdateBrandPage> {
   late bool active;
   late Set<String> selectedCategoryIds;
   bool isLoading = false;
+  Uint8List? _newImageBytes;
+  String? _newImageName;
+  String _existingImageUrl = '';
+  String _existingPublicId = '';
 
   final categoryController = Get.find<CategoryController>();
   final brandController = Get.find<BrandController>();
@@ -34,12 +41,29 @@ class _UpdateBrandPageState extends State<UpdateBrandPage> {
     selectedCategoryIds = Set<String>.from(
       widget.brand['categoryIds'] ?? <String>[],
     );
+    _existingImageUrl = (widget.brand['image'] ?? '').toString();
+    _existingPublicId = (widget.brand['publicId'] ?? '').toString();
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    final uploadInput = html.FileUploadInputElement()..accept = 'image/*';
+    uploadInput.click();
+    await uploadInput.onChange.first;
+    if (uploadInput.files!.isEmpty) return;
+    final file = uploadInput.files![0];
+    final reader = html.FileReader();
+    reader.readAsArrayBuffer(file);
+    await reader.onLoad.first;
+    setState(() {
+      _newImageBytes = reader.result as Uint8List;
+      _newImageName = file.name;
+    });
   }
 
   Future<void> _handleUpdate() async {
@@ -58,10 +82,26 @@ class _UpdateBrandPageState extends State<UpdateBrandPage> {
     setState(() => isLoading = true);
 
     try {
+      String imageUrl = _existingImageUrl;
+      String newPublicId = _existingPublicId;
+      if (_newImageBytes != null) {
+        final result = await CloudinaryService.uploadImage(
+          bytes: _newImageBytes!,
+          fileName: _newImageName ?? 'brand_logo.png',
+          folder: 'brands',
+        );
+        if (_existingPublicId.isNotEmpty) {
+          await CloudinaryService.deleteImage(_existingPublicId);
+        }
+        imageUrl = result.url;
+        newPublicId = result.publicId;
+      }
+
       final updated = BrandModel(
         id: widget.brand['id'],
         name: _nameController.text.trim(),
-        image: widget.brand['image'] ?? '',
+        image: imageUrl,
+        publicId: newPublicId,
         categoryIds: selectedCategoryIds.toList(),
         isFeatured: featured,
         isActive: active,
@@ -231,6 +271,69 @@ class _UpdateBrandPageState extends State<UpdateBrandPage> {
                             ),
                           ),
                         ],
+                      ),
+                      const SizedBox(height: 20),
+                      const Text(
+                        "Brand Logo",
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 10),
+                      GestureDetector(
+                        onTap: _pickImage,
+                        child: Container(
+                          height: 100,
+                          width: 100,
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: _newImageBytes != null
+                                  ? const Color(0xFF4299E1)
+                                  : _existingImageUrl.isNotEmpty
+                                      ? const Color(0xFF48BB78)
+                                      : Colors.grey.shade300,
+                              width: 2,
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            color: Colors.grey.shade50,
+                          ),
+                          child: _newImageBytes != null
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(14),
+                                  child: Image.memory(
+                                    _newImageBytes!,
+                                    fit: BoxFit.cover,
+                                  ),
+                                )
+                              : _existingImageUrl.isNotEmpty
+                                  ? ClipRRect(
+                                      borderRadius: BorderRadius.circular(14),
+                                      child: Image.network(
+                                        _existingImageUrl,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) => const Icon(
+                                          Icons.broken_image,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                    )
+                                  : Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        const Icon(
+                                          Icons.upload,
+                                          size: 32,
+                                          color: Colors.grey,
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'Upload',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey.shade600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                        ),
                       ),
                       const SizedBox(height: 30),
                       SizedBox(

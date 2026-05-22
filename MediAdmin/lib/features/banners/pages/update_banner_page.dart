@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'dart:typed_data';
 // ignore: avoid_web_libraries_in_flutter
 import 'dart:html' as html;
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import '../../../services/cloudinary_service.dart';
 import '../controllers/banner_controller.dart';
 import '../models/banner_model.dart';
 
@@ -31,10 +31,13 @@ class _UpdateBannerPageState extends State<UpdateBannerPage> {
 
   late bool isActive;
   late bool isFeatured;
-  Uint8List? _pickedImageBytes;
-  String? _pickedImageName;
-  String? _uploadedImageUrl;
-  bool _isUploadingImage = false;
+  // Newly selected image bytes (not yet uploaded)
+  Uint8List? _newImageBytes;
+  String? _newImageName;
+  // Existing image loaded from Firestore
+  String? _existingImageUrl;
+  String? _existingPublicId;
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -49,18 +52,19 @@ class _UpdateBannerPageState extends State<UpdateBannerPage> {
     endDateController = TextEditingController(text: widget.banner['endDate']);
     isActive = widget.banner['isActive'] ?? true;
     isFeatured = widget.banner['isFeatured'] ?? false;
-    // Pre-fill the existing image URL so the preview shows it
-    _uploadedImageUrl = (widget.banner['image'] ?? '').toString().trim();
-    if (_uploadedImageUrl!.isEmpty) _uploadedImageUrl = null;
+    // Pre-fill existing image for preview
+    _existingImageUrl = (widget.banner['image'] ?? '').toString().trim();
+    if (_existingImageUrl!.isEmpty) _existingImageUrl = null;
+    _existingPublicId = (widget.banner['imagePublicId'] ?? '').toString().trim();
+    if (_existingPublicId!.isEmpty) _existingPublicId = null;
   }
 
-  /// Pick a new PNG/JPEG/JPG image and upload to Firebase Storage.
-  Future<void> _pickAndUploadImage() async {
+  /// Pick a new image file (upload happens only when Update is clicked).
+  Future<void> _pickImage() async {
     final input = html.FileUploadInputElement()
       ..accept = 'image/png,image/jpeg,image/jpg'
       ..multiple = false;
 
-    // Attach to DOM so the browser considers it a trusted interaction
     html.document.body!.append(input);
 
     final changeCompleter = Completer<List<html.File>?>();
@@ -78,11 +82,10 @@ class _UpdateBannerPageState extends State<UpdateBannerPage> {
     final files = await changeCompleter.future;
     input.remove();
 
-    if (files == null) return; // user cancelled
+    if (files == null) return;
 
     final htmlFile = files.first;
 
-    // Read as data URL then convert base64 → Uint8List
     final readerCompleter = Completer<String>();
     final reader = html.FileReader();
     reader.onLoad.listen((_) {
@@ -98,39 +101,13 @@ class _UpdateBannerPageState extends State<UpdateBannerPage> {
     reader.readAsDataUrl(htmlFile);
 
     final dataUrl = await readerCompleter.future;
-    final base64String = dataUrl.split(',').last;
-    final bytes = base64Decode(base64String);
+    final bytes = base64Decode(dataUrl.split(',').last);
 
     if (mounted) {
       setState(() {
-        _pickedImageBytes = bytes;
-        _pickedImageName = htmlFile.name;
-        _isUploadingImage = true;
+        _newImageBytes = bytes;
+        _newImageName = htmlFile.name;
       });
-    }
-
-    try {
-      final ext = htmlFile.name.split('.').last.toLowerCase();
-      final fileName =
-          'banners/${DateTime.now().millisecondsSinceEpoch}_${htmlFile.name}';
-      final ref = FirebaseStorage.instance.ref().child(fileName);
-      final metadata = SettableMetadata(
-        contentType: ext == 'png' ? 'image/png' : 'image/jpeg',
-      );
-      await ref.putData(bytes, metadata);
-      final url = await ref.getDownloadURL();
-      if (mounted) setState(() => _uploadedImageUrl = url);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Image upload failed: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isUploadingImage = false);
     }
   }
 
@@ -250,7 +227,7 @@ class _UpdateBannerPageState extends State<UpdateBannerPage> {
                       AspectRatio(
                         aspectRatio: 16 / 9,
                         child: GestureDetector(
-                          onTap: _isUploadingImage ? null : _pickAndUploadImage,
+                          onTap: _isSaving ? null : _pickImage,
                           child: MouseRegion(
                             cursor: SystemMouseCursors.click,
                             child: Container(
@@ -259,28 +236,15 @@ class _UpdateBannerPageState extends State<UpdateBannerPage> {
                                 color: const Color(0xFFF7FAFC),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: _pickedImageBytes != null
-                                      ? (_uploadedImageUrl != null
-                                            ? const Color(0xFF48BB78)
-                                            : const Color(0xFF4299E1))
-                                      : (_uploadedImageUrl != null
-                                            ? const Color(0xFF48BB78)
-                                            : const Color(0xFFE2E8F0)),
+                                  color: _newImageBytes != null
+                                      ? const Color(0xFF4299E1)
+                                      : _existingImageUrl != null
+                                      ? const Color(0xFF48BB78)
+                                      : const Color(0xFFE2E8F0),
                                   width: 2,
                                 ),
                               ),
-                              child: _isUploadingImage
-                                  ? const Center(
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          CircularProgressIndicator(),
-                                          SizedBox(height: 12),
-                                          Text('Uploading image…'),
-                                        ],
-                                      ),
-                                    )
-                                  : _pickedImageBytes != null
+                              child: _newImageBytes != null
                                   // Newly picked image bytes (web-safe)
                                   ? ClipRRect(
                                       borderRadius: BorderRadius.circular(10),
@@ -288,50 +252,10 @@ class _UpdateBannerPageState extends State<UpdateBannerPage> {
                                         fit: StackFit.expand,
                                         children: [
                                           Image.memory(
-                                            _pickedImageBytes!,
+                                            _newImageBytes!,
                                             fit: BoxFit.cover,
                                           ),
-                                          Positioned(
-                                            top: 8,
-                                            right: 8,
-                                            child: Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 10,
-                                                    vertical: 4,
-                                                  ),
-                                              decoration: BoxDecoration(
-                                                color: _uploadedImageUrl != null
-                                                    ? Colors.green
-                                                    : Colors.orange,
-                                                borderRadius:
-                                                    BorderRadius.circular(20),
-                                              ),
-                                              child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Icon(
-                                                    _uploadedImageUrl != null
-                                                        ? Icons.check
-                                                        : Icons.hourglass_top,
-                                                    color: Colors.white,
-                                                    size: 14,
-                                                  ),
-                                                  const SizedBox(width: 4),
-                                                  Text(
-                                                    _uploadedImageUrl != null
-                                                        ? 'Uploaded'
-                                                        : 'Processing…',
-                                                    style: const TextStyle(
-                                                      color: Colors.white,
-                                                      fontSize: 12,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                          if (_pickedImageName != null)
+                                          if (_newImageName != null)
                                             Positioned(
                                               bottom: 8,
                                               left: 8,
@@ -347,7 +271,7 @@ class _UpdateBannerPageState extends State<UpdateBannerPage> {
                                                       BorderRadius.circular(6),
                                                 ),
                                                 child: Text(
-                                                  _pickedImageName!,
+                                                  _newImageName!,
                                                   style: const TextStyle(
                                                     color: Colors.white,
                                                     fontSize: 11,
@@ -394,7 +318,7 @@ class _UpdateBannerPageState extends State<UpdateBannerPage> {
                                         ],
                                       ),
                                     )
-                                  : _uploadedImageUrl != null
+                                  : _existingImageUrl != null
                                   // Existing network image from Firestore
                                   ? ClipRRect(
                                       borderRadius: BorderRadius.circular(10),
@@ -402,7 +326,7 @@ class _UpdateBannerPageState extends State<UpdateBannerPage> {
                                         fit: StackFit.expand,
                                         children: [
                                           Image.network(
-                                            _uploadedImageUrl!,
+                                            _existingImageUrl!,
                                             fit: BoxFit.cover,
                                             errorBuilder: (_, __, ___) =>
                                                 const Center(
@@ -478,7 +402,7 @@ class _UpdateBannerPageState extends State<UpdateBannerPage> {
                                         ),
                                         const SizedBox(height: 16),
                                         OutlinedButton.icon(
-                                          onPressed: _pickAndUploadImage,
+                                          onPressed: _isSaving ? null : _pickImage,
                                           icon: const Icon(Icons.upload),
                                           label: const Text('Browse file'),
                                           style: OutlinedButton.styleFrom(
@@ -749,42 +673,71 @@ class _UpdateBannerPageState extends State<UpdateBannerPage> {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: () async {
-                            if (_formKey.currentState!.validate()) {
-                              if (_isUploadingImage) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      'Please wait, image is still uploading…',
-                                    ),
-                                  ),
-                                );
-                                return;
-                              }
-                              final existing = widget.banner;
-                              final banner = BannerModel(
-                                id: existing['id'] as String? ?? '',
-                                imageUrl:
-                                    _uploadedImageUrl ??
-                                    (existing['image'] as String? ?? ''),
-                                title: bannerTitleController.text.trim(),
-                                description: descriptionController.text.trim(),
-                                redirect: existing['redirect'] as String? ?? '',
-                                isActive: isActive,
-                                isFeatured: isFeatured,
-                                views: existing['views'] as int? ?? 0,
-                                clicks: existing['clicks'] as int? ?? 0,
-                                startDate: startDateController.text.trim(),
-                                endDate: endDateController.text.trim(),
-                                createdAt: DateTime.now(),
-                                updatedAt: DateTime.now(),
-                              );
-                              await BannerController.instance.updateBanner(
-                                banner,
-                              );
-                              widget.onBack();
-                            }
-                          },
+                          onPressed: _isSaving
+                              ? null
+                              : () async {
+                                  if (!_formKey.currentState!.validate()) return;
+                                  setState(() => _isSaving = true);
+                                  try {
+                                    final existing = widget.banner;
+                                    String imageUrl = _existingImageUrl ??
+                                        (existing['image'] as String? ?? '');
+                                    String imagePublicId = _existingPublicId ??
+                                        (existing['imagePublicId'] as String? ?? '');
+
+                                    if (_newImageBytes != null &&
+                                        _newImageName != null) {
+                                      // Upload the new image first
+                                      final result =
+                                          await CloudinaryService.uploadImage(
+                                        bytes: _newImageBytes!,
+                                        fileName: _newImageName!,
+                                        folder: 'banners',
+                                      );
+                                      // Delete old image from Cloudinary
+                                      if (imagePublicId.isNotEmpty) {
+                                        await CloudinaryService.deleteImage(
+                                            imagePublicId);
+                                      }
+                                      imageUrl = result.url;
+                                      imagePublicId = result.publicId;
+                                    }
+
+                                    final banner = BannerModel(
+                                      id: existing['id'] as String? ?? '',
+                                      imageUrl: imageUrl,
+                                      imagePublicId: imagePublicId,
+                                      title: bannerTitleController.text.trim(),
+                                      description:
+                                          descriptionController.text.trim(),
+                                      redirect:
+                                          existing['redirect'] as String? ?? '',
+                                      isActive: isActive,
+                                      isFeatured: isFeatured,
+                                      views: existing['views'] as int? ?? 0,
+                                      clicks: existing['clicks'] as int? ?? 0,
+                                      startDate: startDateController.text.trim(),
+                                      endDate: endDateController.text.trim(),
+                                      createdAt: DateTime.now(),
+                                      updatedAt: DateTime.now(),
+                                    );
+                                    await BannerController.instance.updateBanner(
+                                      banner,
+                                    );
+                                    widget.onBack();
+                                  } catch (e) {
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text('Error: $e'),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                    }
+                                  } finally {
+                                    if (mounted) setState(() => _isSaving = false);
+                                  }
+                                },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF4299E1),
                             foregroundColor: Colors.white,
@@ -793,13 +746,22 @@ class _UpdateBannerPageState extends State<UpdateBannerPage> {
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),
-                          child: const Text(
-                            'Update Banner',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                          child: _isSaving
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Text(
+                                  'Update Banner',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                         ),
                       ),
                     ],

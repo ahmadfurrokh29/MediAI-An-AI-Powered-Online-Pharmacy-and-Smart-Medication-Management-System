@@ -259,6 +259,7 @@ class _BannersPageState extends State<BannersPage> {
                                     widget.onViewPressed({
                                       'id': banner.id,
                                       'image': banner.imageUrl,
+                                      'imagePublicId': banner.imagePublicId,
                                       'title': banner.title,
                                       'description': banner.description,
                                       'redirect': banner.redirect,

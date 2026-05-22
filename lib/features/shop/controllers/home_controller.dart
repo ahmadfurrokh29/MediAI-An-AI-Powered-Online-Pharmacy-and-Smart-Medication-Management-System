@@ -114,6 +114,7 @@ class HomeController extends GetxController {
               'id': d.id,
               'name': (m['Name'] ?? '').toString(),
               'image': (m['Image'] ?? '').toString(),
+              'bannerImage': (m['BannerImage'] ?? '').toString(),
             };
           })
           .toList();
@@ -128,7 +129,22 @@ class HomeController extends GetxController {
           .where('isActive', isEqualTo: true)
           .get();
 
-      activeBanners.value = snap.docs.map((d) {
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+
+      activeBanners.value = snap.docs.where((d) {
+        final m = d.data();
+        // Filter by start/end date if set (format: "d/M/yyyy")
+        final startDate = _parseBannerDate(
+          (m['startDate'] ?? m['StartDate'] ?? '').toString(),
+        );
+        final endDate = _parseBannerDate(
+          (m['endDate'] ?? m['EndDate'] ?? '').toString(),
+        );
+        if (startDate != null && today.isBefore(startDate)) return false;
+        if (endDate != null && today.isAfter(endDate)) return false;
+        return true;
+      }).map((d) {
         final m = d.data();
         return {
           'id': d.id,
@@ -142,7 +158,24 @@ class HomeController extends GetxController {
           'redirect': (m['redirect'] ?? m['Redirect'] ?? '').toString(),
         };
       }).toList();
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('⚠️ _fetchActiveBanners error: $e');
+    }
+  }
+
+  /// Returns null if the string is empty or unparsable.
+  DateTime? _parseBannerDate(String dateStr) {
+    if (dateStr.isEmpty) return null;
+    final parts = dateStr.split('/');
+    if (parts.length != 3) return null;
+    try {
+      final d = int.parse(parts[0]);
+      final mo = int.parse(parts[1]);
+      final y = int.parse(parts[2]);
+      return DateTime(y, mo, d);
+    } catch (_) {
+      return null;
+    }
   }
 
   // ── Req #5 ────────────────────────────────────────────────────────────────

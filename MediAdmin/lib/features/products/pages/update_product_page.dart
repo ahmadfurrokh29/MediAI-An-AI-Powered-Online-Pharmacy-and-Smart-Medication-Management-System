@@ -1,5 +1,11 @@
+import 'dart:async';
+import 'dart:convert';
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:html' as html;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../services/cloudinary_service.dart';
+import '../widgets/product_image_upload_widget.dart';
 import '../../categories/controllers/category_controller.dart';
 import '../../subcategories/controllers/subcategory_controller.dart';
 import '../../brands/controllers/brand_controller.dart';
@@ -28,7 +34,9 @@ class _UpdateProductPageState extends State<UpdateProductPage> {
   late final TextEditingController _priceController;
   late final TextEditingController _salePriceController;
   late final TextEditingController _stockController;
-  late final TextEditingController _imageUrlController;
+
+  /// Product images: pre-filled from existing URLs + any newly uploaded.
+  final List<ProductImageEntry> _images = [];
 
   late bool isFeatured;
   late bool isRecommended;
@@ -63,10 +71,17 @@ class _UpdateProductPageState extends State<UpdateProductPage> {
     _stockController = TextEditingController(
       text: widget.product['stock']?.toString() ?? '',
     );
-    final images = widget.product['images'] as List<dynamic>? ?? [];
-    _imageUrlController = TextEditingController(
-      text: images.isNotEmpty ? images.first : '',
-    );
+
+    // Pre-populate images from existing Firestore data
+    final existingImages = widget.product['images'] as List<dynamic>? ?? [];
+    final existingPublicIds = widget.product['imagePublicIds'] as List<dynamic>? ?? [];
+    for (var i = 0; i < existingImages.length; i++) {
+      final s = existingImages[i].toString().trim();
+      if (s.isNotEmpty) {
+        final pid = i < existingPublicIds.length ? existingPublicIds[i].toString() : null;
+        _images.add(ProductImageEntry(name: s.split('/').last, url: s, publicId: pid));
+      }
+    }
 
     isFeatured = widget.product['isFeatured'] ?? false;
     isRecommended = widget.product['isRecommended'] ?? false;
@@ -119,8 +134,86 @@ class _UpdateProductPageState extends State<UpdateProductPage> {
     _priceController.dispose();
     _salePriceController.dispose();
     _stockController.dispose();
-    _imageUrlController.dispose();
     super.dispose();
+  }
+
+  /// Open browser file picker and upload selected images to Cloudinary.
+  Future<void> _pickAndUploadImages() async {
+    final input = html.FileUploadInputElement()
+      ..accept = 'image/png,image/jpeg,image/jpg,image/webp'
+      ..multiple = true;
+
+    html.document.body!.append(input);
+
+    final completer = Completer<List<html.File>?>();
+    input.onChange.listen((_) {
+      final files = input.files;
+      if (!completer.isCompleted) {
+        completer.complete(
+          (files != null && files.isNotEmpty) ? files : null,
+        );
+      }
+    });
+    input.click();
+
+    final files = await completer.future;
+    input.remove();
+    if (files == null) return;
+
+    for (final htmlFile in files) {
+      final readerCompleter = Completer<String>();
+      final reader = html.FileReader();
+      reader.onLoad.listen((_) {
+        if (!readerCompleter.isCompleted) {
+          readerCompleter.complete(reader.result as String);
+        }
+      });
+      reader.onError.listen((_) {
+        if (!readerCompleter.isCompleted) {
+          readerCompleter.completeError('FileReader error');
+        }
+      });
+      reader.readAsDataUrl(htmlFile);
+
+      final dataUrl = await readerCompleter.future;
+      final bytes = base64Decode(dataUrl.split(',').last);
+
+      final entry = ProductImageEntry(
+        bytes: bytes,
+        name: htmlFile.name,
+        uploading: true,
+      );
+      if (mounted) setState(() => _images.add(entry));
+
+      try {
+        final result = await CloudinaryService.uploadImage(
+          bytes: bytes,
+          fileName: htmlFile.name,
+          folder: 'products',
+        );
+        if (mounted) {
+          setState(() {
+            entry.url = result.url;
+            entry.publicId = result.publicId;
+            entry.uploading = false;
+          });
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() => _images.remove(entry));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Upload failed for ${htmlFile.name}: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  void _removeImage(int index) {
+    setState(() => _images.removeAt(index));
   }
 
   Future<void> _handleUpdate() async {
@@ -172,12 +265,8 @@ class _UpdateProductPageState extends State<UpdateProductPage> {
             ? 0.0
             : double.parse(_salePriceController.text),
         stock: int.parse(_stockController.text),
-        images: _imageUrlController.text.trim().isNotEmpty
-            ? [_imageUrlController.text.trim()]
-            : (widget.product['images'] as List<dynamic>?)
-                      ?.map((e) => e.toString())
-                      .toList() ??
-                  [],
+        images: _images.where((e) => e.url != null).map((e) => e.url!).toList(),
+        imagePublicIds: _images.where((e) => e.publicId != null).map((e) => e.publicId!).toList(),
         categoryId: selectedCategoryId!,
         categoryName: category.name,
         subcategoryId: selectedSubcategoryId ?? '',
@@ -631,24 +720,71 @@ class _UpdateProductPageState extends State<UpdateProductPage> {
 
                       const SizedBox(height: 20),
 
-                      // Image URL
-                      const Text(
-                        "Image URL (Optional)",
-                        style: TextStyle(fontWeight: FontWeight.w600),
+                      // ── Product Images Upload ────────────────────────
+                      Row(
+                        children: [
+                          const Text(
+                            'Product Images',
+                            style: TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '(PNG, JPG, JPEG, WebP — up to 5)',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade500,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 8),
-                      TextFormField(
-                        controller: _imageUrlController,
-                        decoration: InputDecoration(
-                          hintText: 'https://example.com/image.png',
-                          filled: true,
-                          fillColor: Colors.grey.shade100,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide.none,
+                      const SizedBox(height: 10),
+                      // Uploaded image grid
+                      if (_images.isNotEmpty)
+                        Wrap(
+                          spacing: 10,
+                          runSpacing: 10,
+                          children: [
+                            for (int i = 0; i < _images.length; i++)
+                              ProductImageThumbnail(
+                                image: _images[i],
+                                onRemove: () => _removeImage(i),
+                                isPrimary: i == 0,
+                              ),
+                          ],
+                        ),
+                      const SizedBox(height: 10),
+                      if (_images.length < 5)
+                        OutlinedButton.icon(
+                          onPressed: _pickAndUploadImages,
+                          icon: const Icon(Icons.add_photo_alternate_outlined),
+                          label: Text(
+                            _images.isEmpty
+                                ? 'Upload Product Images'
+                                : 'Add More Images',
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.blue,
+                            side: const BorderSide(color: Colors.blue),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 12,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
                         ),
-                      ),
+                      if (_images.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Text(
+                            'First image will be the main thumbnail.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade500,
+                            ),
+                          ),
+                        ),
 
                       const SizedBox(height: 20),
 

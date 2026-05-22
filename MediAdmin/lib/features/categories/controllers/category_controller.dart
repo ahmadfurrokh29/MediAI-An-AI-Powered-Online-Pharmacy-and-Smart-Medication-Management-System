@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
+import '../../../services/cloudinary_service.dart';
 import '../models/category_model.dart';
 
 class CategoryController extends GetxController {
@@ -165,6 +166,13 @@ class CategoryController extends GetxController {
   // Delete category
   Future<void> deleteCategory(String categoryId) async {
     try {
+      // 1. Delete images from Cloudinary (best-effort)
+      final idx = categories.indexWhere((c) => c.id == categoryId);
+      if (idx != -1) {
+        await CloudinaryService.deleteImage(categories[idx].imagePublicId);
+        await CloudinaryService.deleteImage(categories[idx].bannerImagePublicId);
+      }
+      // 2. Delete from Firestore
       await _db.collection('Categories').doc(categoryId).delete();
 
       // Remove from local list
