@@ -1,4 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
@@ -60,6 +62,9 @@ class AuthenticationRepository extends GetxController {
         // Sync the emailVerified flag into Firestore so the admin panel shows it.
         await userRepo.updateEmailVerifiedStatus(refreshedUser.uid, true);
 
+        // Save FCM token so the admin panel can send push notifications to this device.
+        await saveFcmToken();
+
         Get.offAll(() => const NavigationMenu());
       } else {
         Get.offAll(() => VerifyEmailScreen(email: refreshedUser.email));
@@ -70,6 +75,22 @@ class AuthenticationRepository extends GetxController {
       deviceStorage.read('isFirstTime') != true
           ? Get.offAll(() => const LoginScreen())
           : Get.offAll(() => const OnBoardingScreen());
+    }
+  }
+
+  /// Saves the FCM token to the current user's Firestore document.
+  /// Call after every successful login/registration and on startup.
+  static Future<void> saveFcmToken() async {
+    try {
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid == null) return;
+      final token = await FirebaseMessaging.instance.getToken();
+      if (token == null) return;
+      await FirebaseFirestore.instance.collection('Users').doc(uid).set({
+        'FcmToken': token,
+      }, SetOptions(merge: true));
+    } catch (_) {
+      // Non-critical — fails silently if offline
     }
   }
 

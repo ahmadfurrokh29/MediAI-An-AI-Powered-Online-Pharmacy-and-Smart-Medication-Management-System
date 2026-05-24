@@ -1,0 +1,724 @@
+================================================================================
+  MediAI — User Flow Diagram
+  Complete interaction flows for Customer App & Admin Panel
+================================================================================
+
+
+════════════════════════════════════════════════════════════════════════════════
+  SECTION A — CUSTOMER APP (Mobile · Flutter)
+════════════════════════════════════════════════════════════════════════════════
+
+LEGEND
+------
+  [SCREEN]    Screen / Page
+  [ACTION]    Action / Feature
+  [SUCCESS]   Success State
+  [ERROR]     Error / Denied
+  [FIREBASE]  Firebase / Firestore
+  [SQLITE]    Local SQLite DB
+  [BG]        Background Service / Worker
+
+
+────────────────────────────────────────────────────────────────────────────────
+  LANE 1 — App Launch & Onboarding
+  Entry point, splash & first-time flow
+────────────────────────────────────────────────────────────────────────────────
+
+  [START] App Launch
+      |
+      v
+  [SCREEN] Splash Screen  (flutter_native_splash)
+      |
+      v
+  <DECISION> First Time? (GetStorage: isFirstTime)
+      |
+      +------ YES (First Time) -------------------------+
+      |                                                  |
+      v                                                  v
+  1. Onboarding Screen 1 — Welcome to MediAI        NO (Returning User)
+  2. Onboarding Screen 2 — Medicine Reminders           |
+  3. Onboarding Screen 3 — Shop & AI Chat               1. Check Firebase Auth state
+  4. Write isFirstTime = false -> Login Screen           2. Logged in + email verified
+                                                            -> Home Screen
+                                                         3. Logged in + not verified
+                                                            -> Verify Email Screen
+                                                         4. Not logged in
+                                                            -> Login Screen
+
+
+────────────────────────────────────────────────────────────────────────────────
+  LANE 2 — Authentication
+  Login, Signup, Email Verification, Social Sign-in
+────────────────────────────────────────────────────────────────────────────────
+
+  EMAIL / PASSWORD LOGIN
+  ----------------------
+  1. Login Screen — enter email & password
+      |
+  2. Form validation
+      |
+  3. [FIREBASE] Firebase Auth: signInWithEmailAndPassword
+      |
+  4. Email verified?
+      |-- YES --> backfill Firestore role:"Customer"
+      |               -> NavigationMenu (Home)
+      |-- NO  --> Verify Email Screen
+
+  SIGN UP
+  -------
+  1. Sign Up Screen — name, email, phone, password
+      |
+  2. Validate form fields
+      |
+  3. [FIREBASE] Firebase Auth: createUserWithEmailAndPassword
+      |
+  4. [FIREBASE] Save UserModel to Firestore: Users/{uid}
+      |
+  5. Send email verification link
+      |
+  6. -> Verify Email Screen (polling loop)
+
+  SOCIAL SIGN-IN (Google / Facebook)
+  -----------------------------------
+  1. Tap Google / Facebook button
+      |
+  2. OAuth redirect / popup
+      |
+  3. [FIREBASE] Firebase Auth: signInWithCredential
+      |
+  4. New user? Create Firestore doc
+      |
+  5. -> NavigationMenu (Home)
+
+
+────────────────────────────────────────────────────────────────────────────────
+  LANE 3 — Main Navigation & All Screens
+  Bottom nav: Home · Store · AI Chat · Profile
+────────────────────────────────────────────────────────────────────────────────
+
+  [SCREEN] NavigationMenu  (Bottom Nav — 4 tabs)
+      |
+      +---------------------------+---------------------------+---------------------------+
+      |                           |                           |                           |
+      v                           v                           v                           v
+  TAB 1: HOME               TAB 2: STORE              TAB 3: AI CHAT           TAB 4: PROFILE
+  ===========               ============              ==============           ============
+
+
+  ┌─────────────────────────────────────────────────────────────────────────────────────┐
+  │  TAB 1 — HOME SCREEN                                                                │
+  │  AppBar: greeting ("Good morning, {name}") + [Wishlist Icon] + [Cart Icon]          │
+  └─────────────────────────────────────────────────────────────────────────────────────┘
+
+  HomeScreen
+      |
+      +──────────────────────────────────────────────────────────────+
+      |                   |                   |                      |
+      v                   v                   v                      v
+  [SEARCH BAR]    [POPULAR CATEGORIES]  [PROMO BANNERS]    [POPULAR PRODUCTS]
+  (tap to open    (horizontal scroll,   (carousel,         (grid of 4,
+  search sheet)   from Firestore        from Firestore     from Firestore
+                  Categories)           Banners)           Products)
+      |                   |                                          |
+      v                   v                                          v
+  Product Search    Category tapped                          "See All" tapped
+  Bottom Sheet          |                                           |
+  (search by name/      v                                           v
+   brand/category)  SubCategoriesScreen                      AllProducts Screen
+      |             (category banner,                        (full grid list)
+      |              subcategory list,                              |
+      |              horizontal product                             v
+      |              scroll per sub)              Product Detail Page (see below)
+      |                   |
+      v                   v
+  Product Detail     SubCategory tapped
+  Page               -> AllProducts Screen
+                         (filtered by subcategory)
+
+  HOME APPBAR ICONS:
+  ------------------
+  [Wishlist Icon] -> FavouriteScreen (Wishlist)
+      |
+      -> Grid of wishlisted products
+      -> Tap product -> Product Detail Page
+      -> Tap "+" icon -> back to HomeScreen
+
+  [Cart Icon] -> CartScreen
+      |
+      -> List of cart items (quantity +/-)
+      -> Remove item
+      -> Total amount
+      -> "Proceed to Checkout" -> CheckoutScreen
+
+
+  ┌─────────────────────────────────────────────────────────────────────────────────────┐
+  │  TAB 2 — STORE SCREEN                                                               │
+  │  AppBar: "Store" + [Cart Icon] + [Search Icon]                                      │
+  └─────────────────────────────────────────────────────────────────────────────────────┘
+
+  Store Screen
+      |
+      +──────────────────────────────────────────────+
+      |                                              |
+      v                                              v
+  [SEARCH BAR]                             [FEATURED BRANDS section]
+  (tap -> Store Search                     (horizontal scroll,
+   Bottom Sheet)                           from Firestore Brands)
+      |                                              |
+      v                                              v
+  Searches:                                  "View All Brands" ->
+  - Products by name/brand/category            AllBrandsScreen
+  - Brands by name                               |
+  - Tap brand result ->                          v
+    BrandProductsScreen                     Brand tapped ->
+  - Tap product result ->                   BrandProductsScreen
+    Product Detail Page                     (all products for brand)
+
+  DYNAMIC CATEGORY TABS (TabBar):
+  --------------------------------
+  [View All] [Category 1] [Category 2] [Category 3] ...
+      |           |
+      v           v
+  Each tab shows:
+  - Top 2 Featured Brands for that category (with product count)
+    -> Tap brand -> BrandProductsScreen
+  - "You might like" section (featured products for category, grid of 4)
+    -> "See All" -> AllProducts Screen
+  - Tap any product card -> Product Detail Page
+
+
+  ┌─────────────────────────────────────────────────────────────────────────────────────┐
+  │  PRODUCT DETAIL PAGE  (reached from Home, Store, Wishlist, Search, Stock)           │
+  └─────────────────────────────────────────────────────────────────────────────────────┘
+
+  Product Detail Page
+      |
+      +────────────────────────────────────────────+─────────────────────────+
+      |                    |                        |                         |
+      v                    v                        v                         v
+  Image slider        Product info             [Heart Icon]             [Add to Cart]
+  (thumbnail strip,   (name, brand,            Wishlist toggle          button
+   swipe to view)     price, sale price,       -> saves to              -> Users/{uid}/Cart
+                       description,             Users/{uid}/Wishlist      -> CartScreen
+                       stock status)
+      |
+      v
+  Reviews Section
+      |
+      +──────────────────────────────+
+      |                              |
+      v                              v
+  Read all reviews             Write a review
+  (public, anyone)             (authenticated users only)
+                               -> saved to Products/{id}/Reviews
+
+
+  ┌─────────────────────────────────────────────────────────────────────────────────────┐
+  │  CHECKOUT FLOW  (reached from Cart)                                                 │
+  └─────────────────────────────────────────────────────────────────────────────────────┘
+
+  CartScreen
+      |
+      v
+  CheckoutScreen
+      |
+      +─────────────────────+─────────────────────+─────────────────────+
+      |                     |                     |                     |
+      v                     v                     v                     v
+  Delivery Address      Coupon Code           Payment Method        Order Summary
+  (select / add new)    (apply code ->        (select)             (items, subtotal,
+  -> UserAddressScreen   validates against                          discount, total)
+                         Coupons collection)
+      |
+      v
+  "Place Order" button
+      |
+      v
+  [SUCCESS] Order written to Firestore: Orders/{id}
+      |
+      v
+  Order Confirmation Screen
+
+
+  ┌─────────────────────────────────────────────────────────────────────────────────────┐
+  │  TAB 3 — AI CHAT (Pharmacist)                                                       │
+  └─────────────────────────────────────────────────────────────────────────────────────┘
+
+  ChatbotScreen
+      |
+      +─────────────────────────────+
+      |                             |
+      v                             v
+  User types message            AI response
+  (medicine query,              (pharmacist-style,
+   symptom question,             streamed text)
+   drug interaction)
+
+
+  ┌─────────────────────────────────────────────────────────────────────────────────────┐
+  │  TAB 4 — PROFILE (Settings Screen)                                                  │
+  │  Header: profile picture + name + email + [Edit Profile]                            │
+  └─────────────────────────────────────────────────────────────────────────────────────┘
+
+  SettingsScreen
+      |
+      +──────────────────────── ACCOUNT SETTINGS ──────────────────────────+
+      |              |              |              |              |          |
+      v              v              v              v              v          v
+  My Medical     My             My             My Cart       My Orders  Bank Account
+  History        Medication     Addresses      Screen        Screen     Screen
+  Screen         Screen         Screen         (CartScreen)  (Order     (BankAccount
+  (OCR scan,     (Reminder +    (add/edit/                    history,   Screen)
+   history        Stock tabs)    delete                        detail,
+   list)                         addresses,                    status)
+                                 set default)
+      |
+      +──────────────────────── MORE SETTINGS ─────────────────────────────+
+      |              |              |              |
+      v              v              v              v
+  My Coupons     Notifications  Privacy        Logout
+  (list of       Screen         Policy         (confirmation
+   saved          (announcements (web view)     -> Firebase
+   coupons)       + unread badge)               signOut
+                  mark all read)                -> Login Screen)
+
+
+  PROFILE SCREEN (from "Edit Profile" in header):
+  ------------------------------------------------
+  -> Edit first name, last name
+  -> Change profile photo (image_picker -> Firebase Storage)
+  -> Change email (re-authentication required)
+  -> Change phone number
+  -> Delete account
+  -> Save -> Updates Firestore Users/{uid}
+
+
+  ORDER SCREEN (My Orders):
+  -------------------------
+  -> List all orders for current user
+  -> Each order: date, items, total, status chip
+  -> Tap order -> OrderDetailScreen
+     -> Full breakdown: items, addresses, payment, timeline
+
+
+────────────────────────────────────────────────────────────────────────────────
+  LANE 4 — Shop & E-Commerce (Full Flow Summary)
+  Complete purchase journey reference
+────────────────────────────────────────────────────────────────────────────────
+
+  ENTRY POINTS -> Product Detail Page:
+  -------------------------------------
+  Home: Popular Products grid        -> Product Detail
+  Home: Category -> SubCategory      -> Product Detail
+  Home: Search sheet result          -> Product Detail
+  Store: Category tab product card   -> Product Detail
+  Store: Brand page product card     -> Product Detail
+  Store: Search sheet result         -> Product Detail
+  Wishlist: saved product card       -> Product Detail
+  Stock Management: low-stock card   -> (Add to Cart direct)
+
+  PURCHASE FLOW:
+  --------------
+  Product Detail
+      |
+      v
+  Add to Cart  [FIREBASE] Users/{uid}/Cart/{itemId}
+      |
+      v
+  CartScreen
+      -> Adjust quantities (+/-)
+      -> Remove items
+      -> View subtotal
+      |
+      v
+  CheckoutScreen
+      -> Select/add delivery address  (Users/{uid}/addresses)
+      -> Apply coupon code            [FIREBASE] Coupons collection
+      -> Select payment method
+      -> Review order summary
+      |
+      v
+  [SUCCESS] Place Order
+      -> Write to [FIREBASE] Orders/{orderId}
+      -> Clear cart  Users/{uid}/Cart
+      -> Order Confirmation screen
+
+  WISHLIST FLOW:
+  --------------
+  Tap heart on any product card / Product Detail page
+      |
+      v
+  WishlistController.toggleWishlist()
+      |
+      +-- Add: write [FIREBASE] Users/{uid}/Wishlist/{productId}
+      +-- Remove: delete Users/{uid}/Wishlist/{productId}
+      |
+      v
+  FavouriteScreen (all wishlisted products in grid)
+      -> Tap product -> Product Detail Page
+
+  ORDER TRACKING FLOW:
+  --------------------
+  Settings -> My Orders -> OrderScreen
+      -> All orders for current user (read [FIREBASE] Orders)
+      -> Filter by status
+      -> Tap order -> OrderDetailScreen
+         -> Items list, delivery address, payment, status timeline
+         Statuses: Pending -> Processing -> Shipped -> Delivered / Cancelled
+
+
+────────────────────────────────────────────────────────────────────────────────
+  LANE 5 — My Medication Module
+  Tab 1: Medicine Reminders   Tab 2: Stock Management
+────────────────────────────────────────────────────────────────────────────────
+
+  [SCREEN] My Medication Screen  (TabBar — 2 tabs)
+      |
+      +------------------------------------+------------------------------------+
+      |                                    |
+      v                                    v
+  TAB 1 — MEDICINE REMINDER           TAB 2 — STOCK MANAGEMENT
+  -------------------------           ------------------------
+  1. Load medicines from              1. Read medicine stock from
+     [SQLITE] LocalDB                    [SQLITE] LocalDB
+  2. Group by medicine name           2. Compute stock level:
+     (merge duplicates)                  available_stock / (frequency x duration)
+  3. Display cards:                   3. Categorise:
+     name · disease · times               RED  = Out of Stock
+  4. Tap Edit                              ORANGE = Low Stock
+     -> MultiDiseaseEditPage               GREEN  = Normal
+  5. Tap Delete                       4. Pull-to-refresh to reload
+     -> remove from SQLite            5. Tap Edit Stock
+     -> cancel alarm                     -> update available_stock in SQLite
+                                      6. Tap Add to Cart
+                                         -> ShopController -> Orders flow
+
+  ALARM SCHEDULING FLOW               STOCK ALERT FLOW
+  ---------------------               ----------------
+  A. OCR Scan / Manual Entry          A. App launch
+     -> save to SQLite                   -> NotificationService
+  B. NotificationService                    .checkAndSendStockAlerts()
+     .scheduleAllFromLocal()           B. Query SQLite:
+  C. flutter_local_notifications          stock <= alert_before_days threshold
+     exact alarm set                  C. One-time local notification
+  D. Alarm fires                         per low-stock medicine
+     -> AlarmTriggerScreen            D. [BG] WorkManager periodic task
+        (full-screen intent)              (background, app closed)
+  E. User taps "Taken" / "Snooze"     E. Re-checks stock
+  F. SyncService -> push to              -> re-fires notifications if still low
+     [FIREBASE] Users/{uid}/medicines
+
+
+────────────────────────────────────────────────────────────────────────────────
+  LANE 6 — Medical History & OCR Scan
+  Scan prescription -> parse -> save locally + sync to cloud
+────────────────────────────────────────────────────────────────────────────────
+
+  Medical History Screen
+      |
+      v
+  Tap Scan Prescription
+      |
+      v
+  Camera / Gallery Picker  (image_picker)
+      |
+      v
+  OCR Engine Extracts Text
+      |
+      v
+  Parse: medicine name, dose, frequency, duration
+      |
+      v
+  Confirm / Edit Screen
+      |
+      v
+  [SQLITE] Save to SQLite LocalDB
+      |
+      v
+  [FIREBASE] Sync to Firestore  Users/{uid}/medicines
+      |
+      v
+  [BG] Schedule Alarms via NotificationService
+
+
+────────────────────────────────────────────────────────────────────────────────
+  LANE 7 — Offline-First Architecture
+  ConnectivityService · OfflineQueueService · SyncService
+────────────────────────────────────────────────────────────────────────────────
+
+  ONLINE                      OFFLINE                     RECONNECT
+  ------                      -------                     ---------
+  1. ConnectivityService:     1. ConnectivityService:     1. ConnectivityService
+     network = online            network = offline            detects network
+  2. All Firestore            2. Reads served from           restored
+     reads/writes go             [SQLITE] LocalDB         2. SyncService.flush()
+     directly               3. Writes queued in              dequeues all ops
+  3. SyncService flushes         OfflineQueueService      3. Push SQLite changes
+     any pending queue                                        -> Firestore
+                                                          4. UI refreshes from
+                                                             Firestore
+
+
+════════════════════════════════════════════════════════════════════════════════
+  SECTION B — ADMIN PANEL (Flutter Web · MediAdmin)
+════════════════════════════════════════════════════════════════════════════════
+
+LEGEND
+------
+  [SCREEN]    Screen / Page
+  [FIREBASE]  Firebase / Firestore
+  [STORAGE]   Firebase Storage
+  [SUCCESS]   Success / Allowed
+  [ERROR]     Access Denied
+  [EXPORT]    Export / External
+
+
+────────────────────────────────────────────────────────────────────────────────
+  LANE 1 — Admin Authentication
+  Role-guarded login via Firebase Auth + Admins collection check
+────────────────────────────────────────────────────────────────────────────────
+
+  [START] Open MediAdmin
+      |
+      v
+  [SCREEN] Admin Login Page  (email · password · remember me)
+      |
+      v
+  Form Validation
+      |
+      v
+  [FIREBASE] Firebase Auth: signInWithEmailAndPassword
+      |
+      v
+  [FIREBASE] Fetch Users/{uid} from Firestore
+      |
+      v
+  <DECISION> role == "admin" ?
+      |
+      +------ YES (Admin Confirmed) ----------------+
+      |                                              |
+      v                                              v
+  1. Navigate to AdminLayout (/admin)           NO (Not Admin)
+  2. All controllers initialised (lazy-load)        |
+  3. Dashboard loads real-time Firebase stats    1. Show "Access Denied" snackbar
+                                                 2. AuthService.signOut()
+                                                 3. Redirect to / (Login Page)
+
+
+────────────────────────────────────────────────────────────────────────────────
+  LANE 2 — Admin Panel Layout
+  Sidebar navigation — 11 sections
+────────────────────────────────────────────────────────────────────────────────
+
+  [SCREEN] AdminLayout  (Sidebar + Content Area + Responsive Header)
+      |
+      +---------------+---------------+---------------+---------------+
+      |               |               |               |
+      v               v               v               v
+  OVERVIEW        DATA MGMT       PRODUCTS        MORE
+  --------        ---------       --------        ----
+  [0] Dashboard   [1] Categories  [4] Products    [7] Banners
+                  [2] Subcateg.   [5] Recommended [8] Coupons
+                  [3] Brands      [6] Orders      [9] Customers
+                                                  [10] Admins
+
+
+────────────────────────────────────────────────────────────────────────────────
+  LANE 3 — Dashboard
+  Real-time KPIs, charts, low-stock alerts, Excel export
+────────────────────────────────────────────────────────────────────────────────
+
+  DATA AGGREGATION                    EXCEL EXPORT
+  ----------------                    ------------
+  1. DashboardController.onInit()     1. Tap Export button on Dashboard
+  2. Stream Orders collection         2. DashboardController compiles stats
+     -> compute total revenue            -> excel package builds .xlsx
+  3. Count orders by status:          3. universal_html triggers browser
+     Pending / Processing /              download (.xlsx)
+     Shipped / Delivered
+  4. Query Products where
+     stock <= 10
+     -> LowStockProduct list
+  5. Render fl_chart bar
+     & pie charts
+
+
+────────────────────────────────────────────────────────────────────────────────
+  LANE 4 — CRUD Modules
+  Categories · Subcategories · Brands · Products
+  Standard Create / Read / Update / Delete with image upload
+────────────────────────────────────────────────────────────────────────────────
+
+  Page opens (initState)
+      |
+      v
+  controller.initialize()  (called once, cached after)
+      |
+      v
+  [FIREBASE] Fetch from Firestore collection
+      |
+      v
+  Display in DataTable
+
+  CREATE                          UPDATE                      DELETE
+  ------                          ------                      ------
+  1. Tap "Add"                    1. Tap edit icon on row     1. Tap delete icon on row
+     -> modal/form opens          2. Pre-fill form with       2. Confirmation dialog
+  2. Fill fields                     existing data            3. [STORAGE] Delete image
+     + tap "Upload Image"         3. Optionally upload new       file from Firebase
+  3. dart:html                       image (replaces old)        Storage
+     FileUploadInputElement       4. [FIREBASE]               4. [FIREBASE]
+     (web)                           Firestore: updateDoc        Firestore: deleteDoc
+  4. [STORAGE] Upload to          5. Table row updates        5. Row removed from table
+     Firebase Storage                in real-time
+     (e.g. categories/)
+  5. Get download URL
+     -> save to Firestore doc
+  6. Table refreshes
+
+
+────────────────────────────────────────────────────────────────────────────────
+  LANE 5 — Product Management
+  Rich products with variants, images, stock & recommended toggle
+────────────────────────────────────────────────────────────────────────────────
+
+  CREATE / EDIT PRODUCT               RECOMMENDED PRODUCTS
+  ---------------------               --------------------
+  1. Fill: title, description,        1. Navigate to "Recommended" page
+     price, sale price, stock         2. Lists products where
+  2. Select category,                    isRecommended == true
+     subcategory, brand               3. Toggle off
+  3. [STORAGE] Upload multiple           -> sets isRecommended = false
+     images -> Firebase Storage:         in Firestore
+     products/                        4. [SUCCESS] Instantly reflected on
+  4. Set isRecommended toggle             customer Home Screen
+  5. [FIREBASE] Save to
+     Products collection
+
+
+────────────────────────────────────────────────────────────────────────────────
+  LANE 6 — Order Management
+  View all orders, update status, track revenue
+────────────────────────────────────────────────────────────────────────────────
+
+  Orders Page
+      |
+      v
+  [FIREBASE] Stream Orders collection
+      |
+      v
+  Filter by Status
+      |
+      v
+  Select Order -> Detail View
+      |
+      v
+  Update Status dropdown
+      |
+      v
+  [FIREBASE] Update Firestore: Orders/{id}
+      |
+      v
+  [SUCCESS] Customer sees status update in real-time
+
+  STATUS PIPELINE:
+  ----------------
+  Pending  ->  Processing  ->  Shipped  ->  Delivered
+                                        |
+                                        +-> Cancelled
+
+
+────────────────────────────────────────────────────────────────────────────────
+  LANE 7 — Promotions: Banners & Coupons
+  Manage marketing content visible to all users
+────────────────────────────────────────────────────────────────────────────────
+
+  BANNER MANAGEMENT                   COUPON MANAGEMENT
+  -----------------                   -----------------
+  1. Upload image                     1. Create coupon:
+     -> [STORAGE] Firebase               code, discount %, expiry date
+     Storage: banners/               2. Set usage limit
+  2. Set title, target                   & minimum order value
+     (category/product link)         3. [FIREBASE] Save to
+  3. [FIREBASE] Save to                  Coupons collection
+     Banners collection              4. [SUCCESS] Customer applies code
+     (public read)                      at checkout
+  4. [SUCCESS] Appears instantly         -> validated against Firestore
+     on customer Home carousel
+
+
+────────────────────────────────────────────────────────────────────────────────
+  LANE 8 — User & Admin Management
+  View customers · Manage admin accounts
+────────────────────────────────────────────────────────────────────────────────
+
+  CUSTOMER MANAGEMENT                 ADMIN MANAGEMENT
+  -------------------                 ----------------
+  1. [FIREBASE] Load all docs         1. [FIREBASE] Load Admins collection
+     from Users collection            2. Add admin:
+  2. Display: name, email,               upload profile image + set role
+     phone, join date,               3. [FIREBASE] Creates Admins/{uid}
+     emailVerified                      doc in Firestore
+  3. Search / filter by              4. [ERROR] Delete admin
+     name or email                      -> removes Admins/{uid}
+  4. View order history              5. [SUCCESS] Firestore Security:
+     (Orders filtered by userId)        isAdmin() gate enforces access
+
+
+────────────────────────────────────────────────────────────────────────────────
+  LANE 9 — Settings & Announcements
+  Admin profile, send announcements to all users, logout
+────────────────────────────────────────────────────────────────────────────────
+
+  SEND ANNOUNCEMENT               ADMIN PROFILE           LOGOUT
+  -----------------               -------------           ------
+  1. Go to Settings               1. View own name,       1. Tap Logout in sidebar
+     -> Notifications                email, role          2. Confirmation dialog
+     sub-view                     2. Edit display            appears
+  2. Compose title + body            name / profile       3. AuthController.logout()
+  3. [FIREBASE] Write to             image                4. Firebase.signOut()
+     Announcements collection     3. Change password         -> clear user state
+  4. [SUCCESS] All customers         via Firebase Auth    5. Navigate to /
+     see it in Notifications                                 (Login Page)
+     screen
+
+
+════════════════════════════════════════════════════════════════════════════════
+  FIRESTORE COLLECTIONS REFERENCE
+════════════════════════════════════════════════════════════════════════════════
+
+  Firestore
+  ├── Users/{uid}
+  │   ├── Cart/{itemId}
+  │   ├── Wishlist/{itemId}
+  │   ├── Notifications/{notifId}
+  │   └── medicines/{medId}
+  │       └── alarms/{alarmId}
+  ├── Products/{id}
+  │   └── Reviews/{reviewId}
+  ├── Categories/{id}
+  ├── Subcategories/{id}
+  ├── Brands/{id}
+  ├── Orders/{id}
+  ├── Banners/{id}
+  ├── Coupons/{id}
+  ├── Admins/{uid}
+  └── Announcements/{id}
+
+  Firebase Storage Paths
+  ├── banners/
+  ├── categories/
+  ├── subcategories/
+  ├── brands/
+  ├── products/
+  └── admins/
+
+  Security Rules Summary
+  ├── Public read:    Products, Categories, Subcategories, Brands, Banners
+  ├── Auth read:      Orders, Coupons, Announcements
+  ├── User-scoped:    Users/{uid} + all subcollections
+  └── Admin-only write: All catalog data (isAdmin() = exists in Admins/{uid})
+
+================================================================================
+  END OF DOCUMENT
+================================================================================

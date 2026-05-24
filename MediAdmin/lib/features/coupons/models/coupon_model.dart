@@ -10,6 +10,12 @@ class CouponModel {
   final DateTime? startDate;
   final DateTime? endDate;
   final int usageLimit;
+  final int usageCount;
+  final int perUserLimit;
+  final double minOrderAmount;
+  final bool stackable;
+  final String targetType; // 'ALL', 'SPECIFIC', 'SEGMENT'
+  final String campaignId;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -23,6 +29,12 @@ class CouponModel {
     this.startDate,
     this.endDate,
     this.usageLimit = 100,
+    this.usageCount = 0,
+    this.perUserLimit = 1,
+    this.minOrderAmount = 0.0,
+    this.stackable = false,
+    this.targetType = 'ALL',
+    this.campaignId = '',
     this.createdAt,
     this.updatedAt,
   });
@@ -37,6 +49,12 @@ class CouponModel {
     DateTime? startDate,
     DateTime? endDate,
     int? usageLimit,
+    int? usageCount,
+    int? perUserLimit,
+    double? minOrderAmount,
+    bool? stackable,
+    String? targetType,
+    String? campaignId,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -50,6 +68,12 @@ class CouponModel {
       startDate: startDate ?? this.startDate,
       endDate: endDate ?? this.endDate,
       usageLimit: usageLimit ?? this.usageLimit,
+      usageCount: usageCount ?? this.usageCount,
+      perUserLimit: perUserLimit ?? this.perUserLimit,
+      minOrderAmount: minOrderAmount ?? this.minOrderAmount,
+      stackable: stackable ?? this.stackable,
+      targetType: targetType ?? this.targetType,
+      campaignId: campaignId ?? this.campaignId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -65,6 +89,12 @@ class CouponModel {
       'StartDate': startDate != null ? Timestamp.fromDate(startDate!) : null,
       'EndDate': endDate != null ? Timestamp.fromDate(endDate!) : null,
       'UsageLimit': usageLimit,
+      'UsageCount': usageCount,
+      'PerUserLimit': perUserLimit,
+      'MinOrderAmount': minOrderAmount,
+      'Stackable': stackable,
+      'TargetType': targetType,
+      'CampaignId': campaignId,
       'CreatedAt': createdAt != null
           ? Timestamp.fromDate(createdAt!)
           : FieldValue.serverTimestamp(),
@@ -84,6 +114,12 @@ class CouponModel {
       startDate: (data['StartDate'] as Timestamp?)?.toDate(),
       endDate: (data['EndDate'] as Timestamp?)?.toDate(),
       usageLimit: data['UsageLimit'] ?? 100,
+      usageCount: data['UsageCount'] ?? 0,
+      perUserLimit: data['PerUserLimit'] ?? 1,
+      minOrderAmount: (data['MinOrderAmount'] ?? 0.0).toDouble(),
+      stackable: data['Stackable'] ?? false,
+      targetType: data['TargetType'] ?? 'ALL',
+      campaignId: data['CampaignId'] ?? '',
       createdAt: (data['CreatedAt'] as Timestamp?)?.toDate(),
       updatedAt: (data['UpdatedAt'] as Timestamp?)?.toDate(),
     );

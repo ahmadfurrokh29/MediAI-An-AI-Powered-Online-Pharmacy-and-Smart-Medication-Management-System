@@ -25,8 +25,11 @@ class _CouponsPageState extends State<CouponsPage> {
   @override
   void initState() {
     super.initState();
-    controller = Get.put(CouponController());
-    controller.initialize();
+    // Controller is registered in AdminLayout.initState — just find it.
+    controller = Get.find<CouponController>();
+    // Refresh data in case it's stale
+    controller.fetchCoupons();
+    controller.fetchAnalytics();
   }
 
   @override
@@ -51,6 +54,10 @@ class _CouponsPageState extends State<CouponsPage> {
       'startDate': _formatDate(c.startDate),
       'endDate': _formatDate(c.endDate),
       'usageLimit': c.usageLimit,
+      'usageCount': c.usageCount,
+      'perUserLimit': c.perUserLimit,
+      'minOrderAmount': c.minOrderAmount,
+      'targetType': c.targetType,
     };
   }
 
@@ -121,6 +128,54 @@ class _CouponsPageState extends State<CouponsPage> {
           ),
         ),
         const SizedBox(height: 20),
+
+        // ── Analytics Summary Bar ────────────────────────────────────────────
+        Obx(
+          () => Row(
+            children: [
+              _StatCard(
+                label: 'Total Coupons',
+                value: controller.coupons.length.toString(),
+                color: Colors.blue,
+                icon: Icons.local_offer,
+              ),
+              const SizedBox(width: 12),
+              _StatCard(
+                label: 'Active',
+                value: controller.coupons
+                    .where((c) => c.isActive)
+                    .length
+                    .toString(),
+                color: Colors.green,
+                icon: Icons.check_circle,
+              ),
+              const SizedBox(width: 12),
+              _StatCard(
+                label: 'Total Redeemed',
+                value: controller.totalRedemptions.value.toString(),
+                color: Colors.purple,
+                icon: Icons.redeem,
+              ),
+              const SizedBox(width: 12),
+              _StatCard(
+                label: 'Discount Given',
+                value:
+                    'Rs ${controller.totalDiscountGiven.value.toStringAsFixed(0)}',
+                color: Colors.orange,
+                icon: Icons.savings,
+              ),
+              const SizedBox(width: 12),
+              _StatCard(
+                label: 'Acceptance Rate',
+                value: '${controller.acceptanceRate.value.toStringAsFixed(1)}%',
+                color: Colors.teal,
+                icon: Icons.thumb_up,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+
         Expanded(
           child: Container(
             width: double.infinity,
@@ -155,6 +210,7 @@ class _CouponsPageState extends State<CouponsPage> {
                       DataColumn(label: Text("Type")),
                       DataColumn(label: Text("Description")),
                       DataColumn(label: Text("Status")),
+                      DataColumn(label: Text("Used / Limit")),
                       DataColumn(label: Text("Start Date")),
                       DataColumn(label: Text("End Date")),
                       DataColumn(label: Text("Action")),
@@ -194,26 +250,73 @@ class _CouponsPageState extends State<CouponsPage> {
                             ),
                           ),
                           DataCell(
+                            GestureDetector(
+                              onTap: () => controller.toggleActive(
+                                coupon.id,
+                                !coupon.isActive,
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 8,
+                                    height: 8,
+                                    decoration: BoxDecoration(
+                                      color: coupon.isActive
+                                          ? Colors.green
+                                          : Colors.red,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    coupon.isActive ? "Active" : "Inactive",
+                                    style: TextStyle(
+                                      color: coupon.isActive
+                                          ? Colors.green
+                                          : Colors.red,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Icon(
+                                    Icons.swap_horiz,
+                                    size: 14,
+                                    color: Colors.grey.shade500,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          // ── Usage Count / Limit column ────────────────────
+                          DataCell(
                             Row(
                               children: [
-                                Container(
-                                  width: 8,
-                                  height: 8,
-                                  decoration: BoxDecoration(
-                                    color: coupon.isActive
-                                        ? Colors.green
-                                        : Colors.red,
-                                    shape: BoxShape.circle,
+                                Text(
+                                  '${coupon.usageCount} / ${coupon.usageLimit}',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color:
+                                        coupon.usageCount >= coupon.usageLimit
+                                        ? Colors.red
+                                        : Colors.black87,
                                   ),
                                 ),
                                 const SizedBox(width: 8),
-                                Text(
-                                  coupon.isActive ? "Active" : "Inactive",
-                                  style: TextStyle(
-                                    color: coupon.isActive
-                                        ? Colors.green
-                                        : Colors.red,
-                                    fontWeight: FontWeight.w600,
+                                SizedBox(
+                                  width: 60,
+                                  child: LinearProgressIndicator(
+                                    value: coupon.usageLimit > 0
+                                        ? (coupon.usageCount /
+                                                  coupon.usageLimit)
+                                              .clamp(0.0, 1.0)
+                                        : 0.0,
+                                    backgroundColor: Colors.grey.shade200,
+                                    color:
+                                        coupon.usageCount >= coupon.usageLimit
+                                        ? Colors.red
+                                        : Colors.green,
+                                    minHeight: 6,
+                                    borderRadius: BorderRadius.circular(3),
                                   ),
                                 ),
                               ],
@@ -289,6 +392,56 @@ class _CouponsPageState extends State<CouponsPage> {
               foregroundColor: Colors.white,
             ),
             child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Reusable stat card widget ──────────────────────────────────────────────────
+class _StatCard extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+  final IconData icon;
+
+  const _StatCard({
+    required this.label,
+    required this.value,
+    required this.color,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(width: 10),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                value,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: color,
+                ),
+              ),
+              Text(
+                label,
+                style: const TextStyle(fontSize: 11, color: Colors.grey),
+              ),
+            ],
           ),
         ],
       ),

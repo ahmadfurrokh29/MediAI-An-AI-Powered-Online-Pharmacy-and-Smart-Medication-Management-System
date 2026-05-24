@@ -19,6 +19,7 @@ import 'package:med/features/shop/screens/order/order.dart';
 import 'package:med/utils/constants/colors.dart';
 import 'package:med/utils/constants/sizes.dart';
 import 'package:med/data/repositories/authentication/authentication_repository.dart';
+import 'package:med/features/shop/screens/coupons/coupon_wallet_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -136,7 +137,7 @@ class SettingsScreen extends StatelessWidget {
                     icon: Iconsax.discount_shape,
                     title: 'My Coupons',
                     subTitle: 'List of all the discounted coupons',
-                    onTap: () {},
+                    onTap: () => Get.to(() => const CouponWalletScreen()),
                   ),
                   MSettingsMenuTile(
                     icon: Iconsax.notification,

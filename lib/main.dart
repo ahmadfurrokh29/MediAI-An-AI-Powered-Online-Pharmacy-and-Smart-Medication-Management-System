@@ -10,11 +10,12 @@ import 'package:med/features/personalization/screens/mymedication/services/notif
 import 'package:med/features/personalization/screens/mymedication/services/sync_service.dart';
 import 'package:med/features/personalization/screens/mymedication/services/connectivity_service.dart';
 import 'package:med/firebase_options.dart';
+import 'package:med/utils/notifications/fcm_notification_service.dart';
 import 'app.dart';
 
 Future<void> main() async {
-  // Widget Bindings  
-   final WidgetsBinding widgetsBinding =
+  // Widget Bindings
+  final WidgetsBinding widgetsBinding =
       WidgetsFlutterBinding.ensureInitialized();
   // todo: Init Local Storage
   await GetStorage.init();
@@ -38,6 +39,9 @@ Future<void> main() async {
 
   // Initialize Connectivity Monitoring (for offline-first sync)
   await ConnectivityService.initialize();
+
+  // Initialize FCM push notifications (coupon offers + other alerts)
+  await FCMNotificationService.init();
 
   // todo: Initialize Authentication
   runApp(const App());

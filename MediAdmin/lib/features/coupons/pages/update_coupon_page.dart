@@ -26,6 +26,11 @@ class _UpdateCouponPageState extends State<UpdateCouponPage> {
   late final TextEditingController usageLimitController;
   late final TextEditingController startDateController;
   late final TextEditingController endDateController;
+  late final TextEditingController perUserLimitController;
+  late final TextEditingController minOrderAmountController;
+
+  final List<String> _targetTypes = ['ALL', 'SPECIFIC', 'SEGMENT'];
+  late String selectedTargetType;
 
   late bool isActive;
 
@@ -44,6 +49,13 @@ class _UpdateCouponPageState extends State<UpdateCouponPage> {
       text: widget.coupon['startDate'],
     );
     endDateController = TextEditingController(text: widget.coupon['endDate']);
+    perUserLimitController = TextEditingController(
+      text: (widget.coupon['perUserLimit'] ?? 1).toString(),
+    );
+    minOrderAmountController = TextEditingController(
+      text: (widget.coupon['minOrderAmount'] ?? 0).toString(),
+    );
+    selectedTargetType = widget.coupon['targetType'] ?? 'ALL';
     isActive = widget.coupon['isActive'] ?? true;
   }
 
@@ -55,6 +67,8 @@ class _UpdateCouponPageState extends State<UpdateCouponPage> {
     usageLimitController.dispose();
     startDateController.dispose();
     endDateController.dispose();
+    perUserLimitController.dispose();
+    minOrderAmountController.dispose();
     super.dispose();
   }
 
@@ -421,6 +435,127 @@ class _UpdateCouponPageState extends State<UpdateCouponPage> {
 
                       const SizedBox(height: 32),
 
+                      // Min Order Amount
+                      const Text(
+                        'Min Order Amount (Rs)',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF2D3748),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: minOrderAmountController,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          hintText: '0 = no minimum',
+                          hintStyle: const TextStyle(color: Color(0xFFA0AEC0)),
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFE2E8F0),
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFE2E8F0),
+                            ),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // Per-User Limit
+                      const Text(
+                        'Per-User Limit',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF2D3748),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: perUserLimitController,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          hintText: 'Max times one user can use this coupon',
+                          hintStyle: const TextStyle(color: Color(0xFFA0AEC0)),
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFE2E8F0),
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFE2E8F0),
+                            ),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // Target Audience
+                      const Text(
+                        'Target Audience',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF2D3748),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<String>(
+                        initialValue: selectedTargetType,
+                        items: _targetTypes
+                            .map(
+                              (t) => DropdownMenuItem(value: t, child: Text(t)),
+                            )
+                            .toList(),
+                        onChanged: (v) =>
+                            setState(() => selectedTargetType = v ?? 'ALL'),
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFE2E8F0),
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFE2E8F0),
+                            ),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 32),
+
                       // Is Active Checkbox
                       CheckboxListTile(
                         value: isActive,
@@ -472,6 +607,19 @@ class _UpdateCouponPageState extends State<UpdateCouponPage> {
                                       usageLimitController.text.trim(),
                                     ) ??
                                     100,
+                                perUserLimit:
+                                    int.tryParse(
+                                      perUserLimitController.text.trim(),
+                                    ) ??
+                                    1,
+                                minOrderAmount:
+                                    (num.tryParse(
+                                              minOrderAmountController.text
+                                                  .trim(),
+                                            ) ??
+                                            0)
+                                        .toDouble(),
+                                targetType: selectedTargetType,
                               );
                               await controller.updateCoupon(coupon);
                               widget.onBack();

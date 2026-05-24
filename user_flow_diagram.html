@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MediAI — User Flow Diagram</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      text-align: center;
+      padding: 40px 20px 24px;
+      background: linear-gradient(135deg, #1a1d2e 0%, #16213e 100%);
+      border-bottom: 1px solid #2d3748;
+    }
+    header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      background: linear-gradient(90deg, #4f9cf9, #a78bfa, #34d399);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+    }
+    header p { color: #94a3b8; font-size: 0.95rem; }
+
+    /* ── Tab switcher ── */
+    .tabs {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      padding: 28px 20px 0;
+    }
+    .tab-btn {
+      padding: 10px 32px;
+      border-radius: 999px;
+      border: 2px solid transparent;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.25s;
+      background: #1e2130;
+      color: #94a3b8;
+    }
+    .tab-btn.active-customer {
+      background: linear-gradient(135deg, #1d4ed8, #3b82f6);
+      color: #fff;
+      border-color: #60a5fa;
+    }
+    .tab-btn.active-admin {
+      background: linear-gradient(135deg, #6d28d9, #8b5cf6);
+      color: #fff;
+      border-color: #a78bfa;
+    }
+    .tab-btn:not(.active-customer):not(.active-admin):hover {
+      border-color: #4b5563;
+      color: #e2e8f0;
+    }
+
+    /* ── Canvas ── */
+    .canvas {
+      display: none;
+      padding: 36px 24px 60px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    .canvas.visible { display: block; }
+
+    /* ── Section title ── */
+    .section-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #64748b;
+      margin-bottom: 12px;
+      padding-left: 4px;
+    }
+
+    /* ── Flow row ── */
+    .flow-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0;
+      margin-bottom: 0;
+    }
+    .flow-row.col {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    /* ── Node types ── */
+    .node {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      border-radius: 10px;
+      padding: 10px 18px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      line-height: 1.35;
+      white-space: nowrap;
+      position: relative;
+      min-width: 120px;
+    }
+    /* start / end */
+    .node.terminal {
+      border-radius: 999px;
+      background: #1e293b;
+      border: 2px solid #475569;
+      color: #94a3b8;
+      padding: 8px 22px;
+      min-width: 80px;
+    }
+    /* decision */
+    .node.decision {
+      background: #1e293b;
+      border: 2px solid #f59e0b;
+      color: #fcd34d;
+      clip-path: polygon(10% 0%, 90% 0%, 100% 50%, 90% 100%, 10% 100%, 0% 50%);
+      padding: 12px 28px;
+      border-radius: 0;
+      min-width: 160px;
+    }
+    /* screen */
+    .node.screen-blue {
+      background: linear-gradient(135deg, #1e3a5f, #1d4ed8);
+      border: 2px solid #3b82f6;
+      color: #bfdbfe;
+    }
+    .node.screen-purple {
+      background: linear-gradient(135deg, #3b1f6e, #6d28d9);
+      border: 2px solid #8b5cf6;
+      color: #ddd6fe;
+    }
+    .node.screen-green {
+      background: linear-gradient(135deg, #064e3b, #059669);
+      border: 2px solid #34d399;
+      color: #a7f3d0;
+    }
+    .node.screen-red {
+      background: linear-gradient(135deg, #4c1d24, #dc2626);
+      border: 2px solid #f87171;
+      color: #fecaca;
+    }
+    .node.screen-orange {
+      background: linear-gradient(135deg, #4c2800, #d97706);
+      border: 2px solid #fbbf24;
+      color: #fde68a;
+    }
+    .node.screen-teal {
+      background: linear-gradient(135deg, #0c3a4a, #0891b2);
+      border: 2px solid #22d3ee;
+      color: #a5f3fc;
+    }
+    /* service / background task */
+    .node.service {
+      background: #1a2035;
+      border: 2px dashed #4b5563;
+      color: #9ca3af;
+      border-radius: 6px;
+    }
+    /* firebase */
+    .node.firebase {
+      background: linear-gradient(135deg, #3d1f00, #b45309);
+      border: 2px solid #f59e0b;
+      color: #fde68a;
+      border-radius: 8px;
+    }
+    /* local db */
+    .node.localdb {
+      background: linear-gradient(135deg, #0f2a14, #15803d);
+      border: 2px solid #4ade80;
+      color: #bbf7d0;
+      border-radius: 4px;
+    }
+
+    /* ── Arrow ── */
+    .arrow {
+      display: flex;
+      align-items: center;
+      color: #4b5563;
+      font-size: 1.3rem;
+      padding: 0 6px;
+      flex-shrink: 0;
+    }
+    .arrow.down {
+      flex-direction: column;
+      padding: 4px 0;
+      font-size: 1.1rem;
+    }
+    .arrow .label {
+      font-size: 0.65rem;
+      color: #6b7280;
+      white-space: nowrap;
+      background: #1a1d2e;
+      border: 1px solid #374151;
+      border-radius: 4px;
+      padding: 1px 5px;
+      margin: 0 3px;
+    }
+    .arrow.dashed { color: #374151; }
+    .arrow.dashed .label { color: #6b7280; }
+
+    /* ── Branch container ── */
+    .branch {
+      display: flex;
+      align-items: flex-start;
+      gap: 0;
+    }
+    .branch-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+    }
+    .branch-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: #f59e0b;
+      margin-bottom: 4px;
+    }
+    .branch-no-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: #f87171;
+      margin-bottom: 4px;
+    }
+
+    /* ── Lane wrapper ── */
+    .lane {
+      background: #141724;
+      border: 1px solid #1e2436;
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 28px;
+    }
+    .lane-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid #1e2436;
+    }
+    .lane-dot {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .lane-header h2 { font-size: 1rem; font-weight: 700; }
+    .lane-header span { font-size: 0.8rem; color: #64748b; }
+
+    /* ── Grid layout for parallel paths ── */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+    }
+    .grid-4 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 16px;
+    }
+
+    /* ── Sub-flow card ── */
+    .subflow {
+      background: #0d1117;
+      border: 1px solid #2d3748;
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .subflow h3 {
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #64748b;
+      margin-bottom: 12px;
+    }
+    .step-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .step {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 0.8rem;
+      line-height: 1.4;
+    }
+    .step-num {
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      font-weight: 700;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .step-num.blue { background: #1d4ed8; color: #bfdbfe; }
+    .step-num.purple { background: #6d28d9; color: #ddd6fe; }
+    .step-num.green { background: #059669; color: #a7f3d0; }
+    .step-num.orange { background: #d97706; color: #fde68a; }
+    .step-num.teal { background: #0891b2; color: #a5f3fc; }
+    .step-num.red { background: #dc2626; color: #fecaca; }
+    .step-arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2px 0 2px 30px;
+      color: #374151;
+      font-size: 0.9rem;
+    }
+
+    /* ── Legend ── */
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 28px;
+      padding: 16px 20px;
+      background: #141724;
+      border: 1px solid #1e2436;
+      border-radius: 12px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.75rem;
+      color: #94a3b8;
+    }
+    .legend-swatch {
+      width: 28px; height: 14px;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+
+    /* ── Connector lines in visual flow ── */
+    .vflow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+    }
+    .hflow {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .v-arrow { color: #4b5563; font-size: 1.2rem; padding: 3px 0; }
+    .h-arrow { color: #4b5563; font-size: 1.2rem; padding: 0 3px; }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>MediAI — User Flow Diagram</h1>
+  <p>Complete interaction flows for Customer App &amp; Admin Panel</p>
+</header>
+
+<!-- Tab Buttons -->
+<div class="tabs">
+  <button class="tab-btn active-customer" onclick="showTab('customer', this)">📱 Customer App</button>
+  <button class="tab-btn" onclick="showTab('admin', this)">🖥️ Admin Panel</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     CUSTOMER FLOW
+═══════════════════════════════════════════════════════════════ -->
+<div id="tab-customer" class="canvas visible">
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="legend-item"><div class="legend-swatch" style="background:#1d4ed8;border:2px solid #3b82f6"></div> Screen / Page</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#6d28d9;border:2px solid #8b5cf6"></div> Action / Feature</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#059669;border:2px solid #34d399"></div> Success State</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#dc2626;border:2px solid #f87171"></div> Error / Denied</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#b45309;border:2px solid #f59e0b"></div> Firebase</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#15803d;border:2px solid #4ade80"></div> Local SQLite DB</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#0891b2;border:2px solid #22d3ee"></div> Background Service</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#1a2035;border:2px dashed #4b5563"></div> Service / Worker</div>
+  </div>
+
+  <!-- ── LANE 1: App Launch ── -->
+  <div class="lane">
+    <div class="lane-header">
+      <div class="lane-dot" style="background:#3b82f6"></div>
+      <h2>1 — App Launch &amp; Onboarding</h2>
+      <span>Entry point, splash &amp; first-time flow</span>
+    </div>
+    <div class="vflow">
+      <div class="node terminal">App Launch</div>
+      <div class="v-arrow">↓</div>
+      <div class="node screen-blue">Splash Screen<br/><small style="font-weight:400;font-size:0.7rem">flutter_native_splash</small></div>
+      <div class="v-arrow">↓</div>
+      <div class="node screen-orange" style="clip-path:polygon(8% 0%,92% 0%,100% 50%,92% 100%,8% 100%,0% 50%);border-radius:0;min-width:200px">First Time?<br/><small style="font-weight:400;font-size:0.7rem">GetStorage: isFirstTime</small></div>
+      <div class="v-arrow" style="opacity:0">↓</div>
+    </div>
+    <div class="grid-2" style="max-width:700px;margin:0 auto">
+      <div class="subflow">
+        <h3 style="color:#34d399">✅ Yes — First Time</h3>
+        <div class="step-list">
+          <div class="step"><div class="step-num green">1</div><span>Onboarding Screen 1 — Welcome to MediAI</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num green">2</div><span>Onboarding Screen 2 — Medicine Reminders</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num green">3</div><span>Onboarding Screen 3 — Shop &amp; AI Chat</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num green">4</div><span>Write <code>isFirstTime = false</code> → Login Screen</span></div>
+        </div>
+      </div>
+      <div class="subflow">
+        <h3 style="color:#60a5fa">🔄 No — Returning User</h3>
+        <div class="step-list">
+          <div class="step"><div class="step-num blue">1</div><span>Check Firebase Auth state</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num blue">2</div><span>If logged in + email verified → Home Screen</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num blue">3</div><span>If logged in + not verified → Verify Email Screen</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num blue">4</div><span>If not logged in → Login Screen</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── LANE 2: Authentication ── -->
+  <div class="lane">
+    <div class="lane-header">
+      <div class="lane-dot" style="background:#3b82f6"></div>
+      <h2>2 — Authentication</h2>
+      <span>Login, Signup, Email Verification, Social Sign-in</span>
+    </div>
+    <div class="grid-3">
+      <div class="subflow">
+        <h3 style="color:#60a5fa">📧 Email / Password Login</h3>
+        <div class="step-list">
+          <div class="step"><div class="step-num blue">1</div><span>Login Screen — enter email &amp; password</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num blue">2</div><span>Form validation</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num blue">3</div><span>Firebase Auth: signInWithEmailAndPassword</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num green">4</div><span>Email verified? → backfill Firestore role:"Customer"</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num green">5</div><span>→ NavigationMenu (Home)</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num red">✗</div><span>Not verified → Verify Email Screen</span></div>
+        </div>
+      </div>
+      <div class="subflow">
+        <h3 style="color:#a78bfa">🆕 Sign Up</h3>
+        <div class="step-list">
+          <div class="step"><div class="step-num purple">1</div><span>Sign Up Screen — name, email, phone, password</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num purple">2</div><span>Validate form fields</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num purple">3</div><span>Firebase Auth: createUserWithEmailAndPassword</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num purple">4</div><span>Save UserModel to Firestore: Users/{uid}</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num purple">5</div><span>Send email verification link</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num purple">6</div><span>→ Verify Email Screen (polling loop)</span></div>
+        </div>
+      </div>
+      <div class="subflow">
+        <h3 style="color:#34d399">🔗 Social Sign-In</h3>
+        <div class="step-list">
+          <div class="step"><div class="step-num green">1</div><span>Tap Google / Facebook button</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num green">2</div><span>OAuth redirect / popup</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num green">3</div><span>Firebase Auth: signInWithCredential</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num green">4</div><span>New user? Create Firestore doc</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num green">5</div><span>→ NavigationMenu (Home)</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── LANE 3: Main Navigation ── -->
+  <div class="lane">
+    <div class="lane-header">
+      <div class="lane-dot" style="background:#3b82f6"></div>
+      <h2>3 — Main Navigation</h2>
+      <span>Bottom nav: Home · Store · AI Chat · Profile</span>
+    </div>
+    <div class="vflow">
+      <div class="node screen-blue" style="min-width:260px">NavigationMenu<br/><small style="font-weight:400;font-size:0.7rem">Bottom Nav — 4 tabs</small></div>
+      <div class="v-arrow">↓</div>
+    </div>
+    <div class="grid-4">
+      <div class="subflow" style="border-color:#3b82f6">
+        <h3 style="color:#60a5fa">🏠 Home</h3>
+        <div class="step-list">
+          <div class="step"><div class="step-num blue">→</div><span>Banner carousel (Firestore)</span></div>
+          <div class="step"><div class="step-num blue">→</div><span>Featured categories</span></div>
+          <div class="step"><div class="step-num blue">→</div><span>Recommended products</span></div>
+          <div class="step"><div class="step-num blue">→</div><span>Search bar</span></div>
+        </div>
+      </div>
+      <div class="subflow" style="border-color:#8b5cf6">
+        <h3 style="color:#a78bfa">🛒 Store</h3>
+        <div class="step-list">
+          <div class="step"><div class="step-num purple">→</div><span>Browse all categories</span></div>
+          <div class="step"><div class="step-num purple">→</div><span>Filter / Sort products</span></div>
+          <div class="step"><div class="step-num purple">→</div><span>Product Detail page</span></div>
+          <div class="step"><div class="step-num purple">→</div><span>Add to Cart / Wishlist</span></div>
+        </div>
+      </div>
+      <div class="subflow" style="border-color:#22d3ee">
+        <h3 style="color:#a5f3fc">🤖 AI Chat</h3>
+        <div class="step-list">
+          <div class="step"><div class="step-num teal">→</div><span>Chat interface</span></div>
+          <div class="step"><div class="step-num teal">→</div><span>Ask about medicines / symptoms</span></div>
+          <div class="step"><div class="step-num teal">→</div><span>AI pharmacist response</span></div>
+        </div>
+      </div>
+      <div class="subflow" style="border-color:#4b5563">
+        <h3 style="color:#9ca3af">👤 Profile</h3>
+        <div class="step-list">
+          <div class="step"><div class="step-num" style="background:#4b5563;color:#e2e8f0">→</div><span>Settings Screen</span></div>
+          <div class="step"><div class="step-num" style="background:#4b5563;color:#e2e8f0">→</div><span>Edit Profile</span></div>
+          <div class="step"><div class="step-num" style="background:#4b5563;color:#e2e8f0">→</div><span>My Orders</span></div>
+          <div class="step"><div class="step-num" style="background:#4b5563;color:#e2e8f0">→</div><span>My Medication</span></div>
+          <div class="step"><div class="step-num" style="background:#4b5563;color:#e2e8f0">→</div><span>Notifications</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── LANE 4: Shop / E-Commerce ── -->
+  <div class="lane">
+    <div class="lane-header">
+      <div class="lane-dot" style="background:#8b5cf6"></div>
+      <h2>4 — Shop &amp; E-Commerce</h2>
+      <span>Browse → Product Detail → Cart → Checkout → Order</span>
+    </div>
+    <div class="vflow">
+      <div class="hflow">
+        <div class="node screen-purple">Browse Products</div>
+        <div class="h-arrow">→</div>
+        <div class="node screen-purple">Product Detail</div>
+        <div class="h-arrow">→</div>
+        <div class="node screen-purple">Add to Cart<br/><small style="font-weight:400;font-size:0.7rem">Users/{uid}/Cart</small></div>
+        <div class="h-arrow">→</div>
+        <div class="node screen-purple">Cart Screen</div>
+        <div class="h-arrow">→</div>
+        <div class="node screen-purple">Apply Coupon?<br/><small style="font-weight:400;font-size:0.7rem">Coupons collection</small></div>
+        <div class="h-arrow">→</div>
+        <div class="node screen-purple">Checkout Screen</div>
+        <div class="h-arrow">→</div>
+        <div class="node screen-green">Order Placed<br/><small style="font-weight:400;font-size:0.7rem">Orders collection</small></div>
+      </div>
+      <div class="v-arrow">↓</div>
+    </div>
+    <div class="grid-2" style="max-width:800px;margin:0 auto">
+      <div class="subflow">
+        <h3 style="color:#a78bfa">Product Detail Actions</h3>
+        <div class="step-list">
+          <div class="step"><div class="step-num purple">→</div><span>View images, description, variants</span></div>
+          <div class="step"><div class="step-num purple">→</div><span>Read / write Reviews (Reviews subcollection)</span></div>
+          <div class="step"><div class="step-num purple">→</div><span>Add to Wishlist → Users/{uid}/Wishlist</span></div>
+          <div class="step"><div class="step-num purple">→</div><span>Share product via share_plus</span></div>
+        </div>
+      </div>
+      <div class="subflow">
+        <h3 style="color:#34d399">Order Tracking</h3>
+        <div class="step-list">
+          <div class="step"><div class="step-num green">1</div><span>My Orders page → Orders collection (read)</span></div>
+          <div class="step"><div class="step-num green">2</div><span>Order statuses: Pending → Processing → Shipped → Delivered</span></div>
+          <div class="step"><div class="step-num green">3</div><span>Order detail with item breakdown</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── LANE 5: My Medication ── -->
+  <div class="lane">
+    <div class="lane-header">
+      <div class="lane-dot" style="background:#34d399"></div>
+      <h2>5 — My Medication Module</h2>
+      <span>Tab 1: Medicine Reminders · Tab 2: Stock Management</span>
+    </div>
+    <div class="vflow" style="align-items:center">
+      <div class="node screen-green" style="min-width:260px">My Medication Screen<br/><small style="font-weight:400;font-size:0.7rem">TabBar — 2 tabs</small></div>
+      <div class="v-arrow">↓</div>
+    </div>
+    <div class="grid-2">
+
+      <!-- Reminder Tab -->
+      <div class="subflow" style="border-color:#34d399">
+        <h3 style="color:#34d399">🔔 Tab 1 — Medicine Reminder</h3>
+        <div class="step-list">
+          <div class="step"><div class="step-num green">1</div><span>Load all medicines from <strong>LocalDB (SQLite)</strong></span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num green">2</div><span>Group entries by medicine name (merge duplicates)</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num green">3</div><span>Display cards: name · disease · scheduled times</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num green">4</div><span>Tap <strong>Edit</strong> → MultiDiseaseEditPage</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num green">5</div><span>Tap <strong>Delete</strong> → remove from SQLite + cancel alarm</span></div>
+        </div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid #1e4030">
+          <div class="section-title">Alarm Scheduling Flow</div>
+          <div class="step-list">
+            <div class="step"><div class="step-num teal">A</div><span>OCR Scan / Manual Entry → save to SQLite</span></div>
+            <div class="step-arrow">↓</div>
+            <div class="step"><div class="step-num teal">B</div><span>NotificationService.scheduleAllFromLocal()</span></div>
+            <div class="step-arrow">↓</div>
+            <div class="step"><div class="step-num teal">C</div><span>flutter_local_notifications: exact alarm set</span></div>
+            <div class="step-arrow">↓</div>
+            <div class="step"><div class="step-num teal">D</div><span>Alarm fires → AlarmTriggerScreen (full-screen)</span></div>
+            <div class="step-arrow">↓</div>
+            <div class="step"><div class="step-num teal">E</div><span>User taps "Taken" / "Snooze"</span></div>
+            <div class="step-arrow">↓</div>
+            <div class="step"><div class="step-num teal">F</div><span>SyncService → push to Firestore Users/{uid}/medicines</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stock Tab -->
+      <div class="subflow" style="border-color:#0891b2">
+        <h3 style="color:#22d3ee">📦 Tab 2 — Stock Management</h3>
+        <div class="step-list">
+          <div class="step"><div class="step-num teal">1</div><span>Read medicine stock from <strong>LocalDB (SQLite)</strong></span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num teal">2</div><span>Compute stock level:<br/><small>available_stock ÷ (frequency × duration)</small></span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num teal">3</div><span>Categorise: 🔴 Out of Stock / 🟠 Low / 🟢 Normal</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num teal">4</div><span>Pull-to-refresh to reload</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num teal">5</div><span>Tap <strong>Edit Stock</strong> → update available_stock in SQLite</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num teal">6</div><span>Tap <strong>Add to Cart</strong> → ShopController → Orders flow</span></div>
+        </div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid #0c3a4a">
+          <div class="section-title">Stock Alert Flow</div>
+          <div class="step-list">
+            <div class="step"><div class="step-num orange">A</div><span>App launch → NotificationService.checkAndSendStockAlerts()</span></div>
+            <div class="step-arrow">↓</div>
+            <div class="step"><div class="step-num orange">B</div><span>Query SQLite: stock ≤ alert_before_days threshold</span></div>
+            <div class="step-arrow">↓</div>
+            <div class="step"><div class="step-num orange">C</div><span>One-time local notification per low-stock medicine</span></div>
+            <div class="step-arrow">↓</div>
+            <div class="step"><div class="step-num orange">D</div><span><strong>WorkManager</strong> periodic task (background, app closed)</span></div>
+            <div class="step-arrow">↓</div>
+            <div class="step"><div class="step-num orange">E</div><span>Re-checks stock → re-fires notifications if still low</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── LANE 6: OCR / Medical History ── -->
+  <div class="lane">
+    <div class="lane-header">
+      <div class="lane-dot" style="background:#f59e0b"></div>
+      <h2>6 — Medical History &amp; OCR Scan</h2>
+      <span>Scan prescription → parse → save locally + sync to cloud</span>
+    </div>
+    <div class="hflow" style="justify-content:flex-start;flex-wrap:wrap;gap:0">
+      <div class="node screen-orange">Medical History<br/>Screen</div>
+      <div class="h-arrow">→</div>
+      <div class="node screen-orange">Tap Scan<br/>Prescription</div>
+      <div class="h-arrow">→</div>
+      <div class="node screen-orange">Camera / Gallery<br/>Picker</div>
+      <div class="h-arrow">→</div>
+      <div class="node screen-orange">OCR Engine<br/>Extracts Text</div>
+      <div class="h-arrow">→</div>
+      <div class="node screen-orange">Parse: medicine,<br/>dose, frequency</div>
+      <div class="h-arrow">→</div>
+      <div class="node screen-orange">Confirm / Edit<br/>Screen</div>
+      <div class="h-arrow">→</div>
+      <div class="node localdb">Save to<br/>SQLite LocalDB</div>
+      <div class="h-arrow">→</div>
+      <div class="node firebase">Sync to<br/>Firestore</div>
+      <div class="h-arrow">→</div>
+      <div class="node service">Schedule<br/>Alarms</div>
+    </div>
+  </div>
+
+  <!-- ── LANE 7: Offline-First Sync ── -->
+  <div class="lane">
+    <div class="lane-header">
+      <div class="lane-dot" style="background:#22d3ee"></div>
+      <h2>7 — Offline-First Architecture</h2>
+      <span>ConnectivityService · OfflineQueueService · SyncService</span>
+    </div>
+    <div class="grid-3">
+      <div class="subflow">
+        <h3 style="color:#22d3ee">📶 Online</h3>
+        <div class="step-list">
+          <div class="step"><div class="step-num teal">1</div><span>ConnectivityService: network = online</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num teal">2</div><span>All Firestore reads/writes go directly</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num teal">3</div><span>SyncService flushes any pending offline queue</span></div>
+        </div>
+      </div>
+      <div class="subflow">
+        <h3 style="color:#9ca3af">📵 Offline</h3>
+        <div class="step-list">
+          <div class="step"><div class="step-num" style="background:#4b5563;color:#e2e8f0">1</div><span>ConnectivityService: network = offline</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num" style="background:#4b5563;color:#e2e8f0">2</div><span>Reads serve from SQLite LocalDB</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num" style="background:#4b5563;color:#e2e8f0">3</div><span>Writes queued in OfflineQueueService</span></div>
+        </div>
+      </div>
+      <div class="subflow">
+        <h3 style="color:#34d399">🔄 Reconnect</h3>
+        <div class="step-list">
+          <div class="step"><div class="step-num green">1</div><span>ConnectivityService detects network restored</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num green">2</div><span>SyncService.flush() dequeues all pending ops</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num green">3</div><span>Push SQLite changes → Firestore</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num green">4</div><span>UI refreshes from Firestore</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end customer canvas -->
+
+
+<!-- ═══════════════════════════════════════════════════════════════
+     ADMIN FLOW
+═══════════════════════════════════════════════════════════════ -->
+<div id="tab-admin" class="canvas">
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="legend-item"><div class="legend-swatch" style="background:#6d28d9;border:2px solid #8b5cf6"></div> Screen / Page</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#059669;border:2px solid #34d399"></div> Success / Allowed</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#dc2626;border:2px solid #f87171"></div> Access Denied</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#b45309;border:2px solid #f59e0b"></div> Firebase / Firestore</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#0891b2;border:2px solid #22d3ee"></div> Storage</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#1a2035;border:2px dashed #4b5563"></div> Export / External</div>
+  </div>
+
+  <!-- ── LANE 1: Auth ── -->
+  <div class="lane">
+    <div class="lane-header">
+      <div class="lane-dot" style="background:#8b5cf6"></div>
+      <h2>1 — Admin Authentication</h2>
+      <span>Role-guarded login via Firebase Auth + Admins collection check</span>
+    </div>
+    <div class="vflow" style="align-items:center">
+      <div class="node terminal">Open MediAdmin</div>
+      <div class="v-arrow">↓</div>
+      <div class="node screen-purple">Admin Login Page<br/><small style="font-weight:400;font-size:0.7rem">email · password · remember me</small></div>
+      <div class="v-arrow">↓</div>
+      <div class="node screen-purple">Form Validation</div>
+      <div class="v-arrow">↓</div>
+      <div class="node firebase">Firebase Auth<br/>signInWithEmailAndPassword</div>
+      <div class="v-arrow">↓</div>
+      <div class="node firebase">Fetch Users/{uid}<br/>from Firestore</div>
+      <div class="v-arrow">↓</div>
+      <div class="node screen-orange" style="clip-path:polygon(8% 0%,92% 0%,100% 50%,92% 100%,8% 100%,0% 50%);border-radius:0;min-width:220px">role == "admin" ?</div>
+      <div class="v-arrow" style="opacity:0">↓</div>
+    </div>
+    <div class="grid-2" style="max-width:600px;margin:0 auto">
+      <div class="subflow" style="border-color:#34d399">
+        <h3 style="color:#34d399">✅ Admin Confirmed</h3>
+        <div class="step-list">
+          <div class="step"><div class="step-num green">1</div><span>Navigate to AdminLayout (/admin)</span></div>
+          <div class="step"><div class="step-num green">2</div><span>All controllers initialised (lazy-load)</span></div>
+          <div class="step"><div class="step-num green">3</div><span>Dashboard loads real-time Firebase stats</span></div>
+        </div>
+      </div>
+      <div class="subflow" style="border-color:#f87171">
+        <h3 style="color:#f87171">❌ Not Admin</h3>
+        <div class="step-list">
+          <div class="step"><div class="step-num red">1</div><span>Show "Access Denied" snackbar</span></div>
+          <div class="step"><div class="step-num red">2</div><span>AuthService.signOut()</span></div>
+          <div class="step"><div class="step-num red">3</div><span>Redirect back to / (Login Page)</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── LANE 2: Admin Panel Layout ── -->
+  <div class="lane">
+    <div class="lane-header">
+      <div class="lane-dot" style="background:#8b5cf6"></div>
+      <h2>2 — Admin Panel Layout</h2>
+      <span>Sidebar navigation — 11 sections</span>
+    </div>
+    <div class="vflow" style="align-items:center">
+      <div class="node screen-purple" style="min-width:300px">AdminLayout<br/><small style="font-weight:400;font-size:0.7rem">Sidebar + Content Area + Responsive Header</small></div>
+      <div class="v-arrow">↓</div>
+    </div>
+    <div class="grid-4">
+      <div class="subflow">
+        <h3 style="color:#a78bfa">📊 Overview</h3>
+        <div class="step-list">
+          <div class="step"><div class="step-num purple">0</div><span>Dashboard</span></div>
+        </div>
+      </div>
+      <div class="subflow">
+        <h3 style="color:#a78bfa">🗂 Data Mgmt</h3>
+        <div class="step-list">
+          <div class="step"><div class="step-num purple">1</div><span>Categories</span></div>
+          <div class="step"><div class="step-num purple">2</div><span>Subcategories</span></div>
+          <div class="step"><div class="step-num purple">3</div><span>Brands</span></div>
+        </div>
+      </div>
+      <div class="subflow">
+        <h3 style="color:#a78bfa">💊 Products</h3>
+        <div class="step-list">
+          <div class="step"><div class="step-num purple">4</div><span>Products</span></div>
+          <div class="step"><div class="step-num purple">5</div><span>Recommended</span></div>
+          <div class="step"><div class="step-num purple">6</div><span>Orders</span></div>
+        </div>
+      </div>
+      <div class="subflow">
+        <h3 style="color:#a78bfa">🎯 More</h3>
+        <div class="step-list">
+          <div class="step"><div class="step-num purple">7</div><span>Banners</span></div>
+          <div class="step"><div class="step-num purple">8</div><span>Coupons</span></div>
+          <div class="step"><div class="step-num purple">9</div><span>Customers</span></div>
+          <div class="step"><div class="step-num purple">10</div><span>Admins</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── LANE 3: Dashboard ── -->
+  <div class="lane">
+    <div class="lane-header">
+      <div class="lane-dot" style="background:#8b5cf6"></div>
+      <h2>3 — Dashboard</h2>
+      <span>Real-time KPIs, charts, low-stock alerts, Excel export</span>
+    </div>
+    <div class="grid-2">
+      <div class="subflow">
+        <h3 style="color:#a78bfa">📈 Data Aggregation</h3>
+        <div class="step-list">
+          <div class="step"><div class="step-num purple">1</div><span>DashboardController.onInit()</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num purple">2</div><span>Stream Orders collection → compute total revenue</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num purple">3</div><span>Count orders by status: Pending / Processing / Shipped / Delivered</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num purple">4</div><span>Query Products where stock ≤ 10 → LowStockProduct list</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num purple">5</div><span>Render fl_chart bar &amp; pie charts</span></div>
+        </div>
+      </div>
+      <div class="subflow">
+        <h3 style="color:#9ca3af">📤 Excel Export</h3>
+        <div class="step-list">
+          <div class="step"><div class="step-num" style="background:#4b5563;color:#e2e8f0">1</div><span>Tap Export button on Dashboard</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num" style="background:#4b5563;color:#e2e8f0">2</div><span>DashboardController compiles stats → excel package</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num" style="background:#4b5563;color:#e2e8f0">3</div><span>universal_html triggers browser download (.xlsx)</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── LANE 4: CRUD Modules ── -->
+  <div class="lane">
+    <div class="lane-header">
+      <div class="lane-dot" style="background:#8b5cf6"></div>
+      <h2>4 — CRUD Modules (Categories · Subcategories · Brands · Products)</h2>
+      <span>Standard Create / Read / Update / Delete with image upload</span>
+    </div>
+    <div class="vflow" style="align-items:center">
+      <div class="hflow">
+        <div class="node screen-purple">Page opens<br/>(initState)</div>
+        <div class="h-arrow">→</div>
+        <div class="node screen-purple">controller.initialize()<br/>called once</div>
+        <div class="h-arrow">→</div>
+        <div class="node firebase">Fetch from<br/>Firestore</div>
+        <div class="h-arrow">→</div>
+        <div class="node screen-purple">Display in<br/>DataTable</div>
+      </div>
+      <div class="v-arrow">↓</div>
+    </div>
+    <div class="grid-3">
+      <div class="subflow">
+        <h3 style="color:#a78bfa">➕ Create</h3>
+        <div class="step-list">
+          <div class="step"><div class="step-num purple">1</div><span>Tap "Add" → modal/form opens</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num purple">2</div><span>Fill fields + tap "Upload Image"</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num teal">3</div><span>dart:html FileUploadInputElement (web)</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num teal">4</div><span>Upload to Firebase Storage (e.g. categories/)</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num purple">5</div><span>Get download URL → save to Firestore doc</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num green">6</div><span>Table refreshes automatically</span></div>
+        </div>
+      </div>
+      <div class="subflow">
+        <h3 style="color:#a78bfa">✏️ Update</h3>
+        <div class="step-list">
+          <div class="step"><div class="step-num purple">1</div><span>Tap edit icon on row</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num purple">2</div><span>Pre-fill form with existing data</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num purple">3</div><span>Optionally upload new image (replaces old)</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num purple">4</div><span>Firestore: updateDoc({uid})</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num green">5</div><span>Table row updates in real-time</span></div>
+        </div>
+      </div>
+      <div class="subflow">
+        <h3 style="color:#f87171">🗑 Delete</h3>
+        <div class="step-list">
+          <div class="step"><div class="step-num red">1</div><span>Tap delete icon on row</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num red">2</div><span>Confirmation dialog</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num red">3</div><span>Firebase Storage: delete image file</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num red">4</div><span>Firestore: deleteDoc({uid})</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num green">5</div><span>Row removed from table</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── LANE 5: Products ── -->
+  <div class="lane">
+    <div class="lane-header">
+      <div class="lane-dot" style="background:#8b5cf6"></div>
+      <h2>5 — Product Management</h2>
+      <span>Create rich products with variants, images, stock &amp; recommended toggle</span>
+    </div>
+    <div class="grid-2">
+      <div class="subflow">
+        <h3 style="color:#a78bfa">💊 Create / Edit Product</h3>
+        <div class="step-list">
+          <div class="step"><div class="step-num purple">1</div><span>Fill: title, description, price, sale price, stock</span></div>
+          <div class="step"><div class="step-num purple">2</div><span>Select category, subcategory, brand</span></div>
+          <div class="step"><div class="step-num purple">3</div><span>Upload multiple images → Firebase Storage: products/</span></div>
+          <div class="step"><div class="step-num purple">4</div><span>Set isRecommended toggle</span></div>
+          <div class="step"><div class="step-num purple">5</div><span>Save → Products collection</span></div>
+        </div>
+      </div>
+      <div class="subflow">
+        <h3 style="color:#a78bfa">⭐ Recommended Products</h3>
+        <div class="step-list">
+          <div class="step"><div class="step-num purple">1</div><span>Navigate to "Recommended" page</span></div>
+          <div class="step"><div class="step-num purple">2</div><span>Lists products where isRecommended == true</span></div>
+          <div class="step"><div class="step-num purple">3</div><span>Toggle off → sets isRecommended = false in Firestore</span></div>
+          <div class="step"><div class="step-num green">4</div><span>Instantly reflected on customer Home Screen</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── LANE 6: Orders ── -->
+  <div class="lane">
+    <div class="lane-header">
+      <div class="lane-dot" style="background:#8b5cf6"></div>
+      <h2>6 — Order Management</h2>
+      <span>View all orders, update status, track revenue</span>
+    </div>
+    <div class="vflow" style="align-items:center">
+      <div class="hflow">
+        <div class="node screen-purple">Orders Page</div>
+        <div class="h-arrow">→</div>
+        <div class="node firebase">Stream Orders<br/>collection</div>
+        <div class="h-arrow">→</div>
+        <div class="node screen-purple">Filter by<br/>Status</div>
+        <div class="h-arrow">→</div>
+        <div class="node screen-purple">Select Order<br/>→ Detail View</div>
+        <div class="h-arrow">→</div>
+        <div class="node screen-purple">Update Status<br/>dropdown</div>
+        <div class="h-arrow">→</div>
+        <div class="node firebase">Update Firestore<br/>Orders/{id}</div>
+        <div class="h-arrow">→</div>
+        <div class="node screen-green">Customer sees<br/>status update</div>
+      </div>
+    </div>
+    <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
+      <div class="node screen-orange" style="min-width:90px;font-size:0.75rem">🟡 Pending</div>
+      <div class="h-arrow">→</div>
+      <div class="node screen-teal" style="min-width:110px;font-size:0.75rem">🔵 Processing</div>
+      <div class="h-arrow">→</div>
+      <div class="node screen-blue" style="min-width:90px;font-size:0.75rem">📦 Shipped</div>
+      <div class="h-arrow">→</div>
+      <div class="node screen-green" style="min-width:100px;font-size:0.75rem">✅ Delivered</div>
+      <div class="h-arrow" style="color:#f87171">/ →</div>
+      <div class="node screen-red" style="min-width:100px;font-size:0.75rem">❌ Cancelled</div>
+    </div>
+  </div>
+
+  <!-- ── LANE 7: Banners & Coupons ── -->
+  <div class="lane">
+    <div class="lane-header">
+      <div class="lane-dot" style="background:#8b5cf6"></div>
+      <h2>7 — Promotions: Banners &amp; Coupons</h2>
+      <span>Manage marketing content visible to all users</span>
+    </div>
+    <div class="grid-2">
+      <div class="subflow">
+        <h3 style="color:#a78bfa">🖼 Banner Management</h3>
+        <div class="step-list">
+          <div class="step"><div class="step-num purple">1</div><span>Upload image → Firebase Storage: banners/</span></div>
+          <div class="step"><div class="step-num purple">2</div><span>Set title, target (category/product link)</span></div>
+          <div class="step"><div class="step-num purple">3</div><span>Save → Banners collection (public read)</span></div>
+          <div class="step"><div class="step-num green">4</div><span>Appears instantly on customer Home carousel</span></div>
+        </div>
+      </div>
+      <div class="subflow">
+        <h3 style="color:#a78bfa">🎫 Coupon Management</h3>
+        <div class="step-list">
+          <div class="step"><div class="step-num purple">1</div><span>Create coupon: code, discount %, expiry date</span></div>
+          <div class="step"><div class="step-num purple">2</div><span>Set usage limit &amp; minimum order value</span></div>
+          <div class="step"><div class="step-num purple">3</div><span>Save → Coupons collection</span></div>
+          <div class="step"><div class="step-num green">4</div><span>Customer applies code at checkout → validated against Firestore</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── LANE 8: User / Admin Management ── -->
+  <div class="lane">
+    <div class="lane-header">
+      <div class="lane-dot" style="background:#8b5cf6"></div>
+      <h2>8 — User &amp; Admin Management</h2>
+      <span>View customers · Manage admin accounts</span>
+    </div>
+    <div class="grid-2">
+      <div class="subflow">
+        <h3 style="color:#a78bfa">👥 Customer Management</h3>
+        <div class="step-list">
+          <div class="step"><div class="step-num purple">1</div><span>Load all docs from Users collection</span></div>
+          <div class="step"><div class="step-num purple">2</div><span>Display: name, email, phone, join date, emailVerified</span></div>
+          <div class="step"><div class="step-num purple">3</div><span>Search / filter by name or email</span></div>
+          <div class="step"><div class="step-num purple">4</div><span>View order history (Orders by userId)</span></div>
+        </div>
+      </div>
+      <div class="subflow">
+        <h3 style="color:#a78bfa">🔐 Admin Management</h3>
+        <div class="step-list">
+          <div class="step"><div class="step-num purple">1</div><span>Load Admins collection</span></div>
+          <div class="step"><div class="step-num purple">2</div><span>Add admin: upload profile image + set role</span></div>
+          <div class="step"><div class="step-num purple">3</div><span>Creates Admins/{uid} doc in Firestore</span></div>
+          <div class="step"><div class="step-num red">4</div><span>Delete admin → removes Admins/{uid}</span></div>
+          <div class="step"><div class="step-num green">5</div><span>Firestore Security: isAdmin() gate enforces access</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── LANE 9: Settings ── -->
+  <div class="lane">
+    <div class="lane-header">
+      <div class="lane-dot" style="background:#8b5cf6"></div>
+      <h2>9 — Settings &amp; Announcements</h2>
+      <span>Admin profile, send announcements to all users, logout</span>
+    </div>
+    <div class="grid-3">
+      <div class="subflow">
+        <h3 style="color:#a78bfa">📢 Send Announcement</h3>
+        <div class="step-list">
+          <div class="step"><div class="step-num purple">1</div><span>Go to Settings → Notifications sub-view</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num purple">2</div><span>Compose title + body</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num purple">3</div><span>Write to Announcements collection</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num green">4</div><span>All customers see it in Notifications screen</span></div>
+        </div>
+      </div>
+      <div class="subflow">
+        <h3 style="color:#a78bfa">👤 Admin Profile</h3>
+        <div class="step-list">
+          <div class="step"><div class="step-num purple">1</div><span>View own name, email, role</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num purple">2</div><span>Edit display name / profile image</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num purple">3</div><span>Change password via Firebase Auth</span></div>
+        </div>
+      </div>
+      <div class="subflow">
+        <h3 style="color:#f87171">🚪 Logout</h3>
+        <div class="step-list">
+          <div class="step"><div class="step-num red">1</div><span>Tap Logout in sidebar</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num red">2</div><span>Confirmation dialog appears</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num red">3</div><span>AuthController.logout()</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num red">4</div><span>Firebase.signOut() → clear user state</span></div>
+          <div class="step-arrow">↓</div>
+          <div class="step"><div class="step-num red">5</div><span>Navigate to / (Login Page)</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end admin canvas -->
+
+<script>
+  function showTab(tab, btn) {
+    document.getElementById('tab-customer').classList.remove('visible');
+    document.getElementById('tab-admin').classList.remove('visible');
+    document.getElementById('tab-' + tab).classList.add('visible');
+
+    document.querySelectorAll('.tab-btn').forEach(b => {
+      b.classList.remove('active-customer', 'active-admin');
+    });
+    if (tab === 'customer') btn.classList.add('active-customer');
+    else btn.classList.add('active-admin');
+  }
+</script>
+
+</body>
+</html>

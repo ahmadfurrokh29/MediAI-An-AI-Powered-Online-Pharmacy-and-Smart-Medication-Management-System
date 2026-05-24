@@ -38,6 +38,9 @@ import '../features/banners/pages/create_banner_page.dart'
 import '../features/banners/pages/update_banner_page.dart'
     show UpdateBannerPage;
 import '../features/coupons/pages/coupons_page.dart' show CouponsPage;
+import '../features/coupons/pages/campaigns_page.dart' show CampaignsPage;
+import '../features/coupons/controllers/coupon_controller.dart'
+    show CouponController;
 import '../features/coupons/pages/create_coupon_page.dart'
     show CreateCouponPage;
 import '../features/coupons/pages/update_coupon_page.dart'
@@ -87,6 +90,18 @@ class _AdminLayoutState extends State<AdminLayout> {
   bool isUpdatingAdmin = false;
   Map<String, dynamic>? selectedAdmin;
   bool _cameFromSettings = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Register CouponController globally so both CouponsPage and CampaignsPage
+    // can access it without needing each other to be initialized first.
+    if (!Get.isRegistered<CouponController>()) {
+      final ctrl = Get.put(CouponController());
+      ctrl.initialize();
+    }
+  }
+
   String getPageTitle() {
     switch (selectedIndex) {
       case 0:
@@ -107,6 +122,8 @@ class _AdminLayoutState extends State<AdminLayout> {
         return "Banners";
       case 8:
         return "Coupons";
+      case 12:
+        return "Campaigns";
       case 9:
         return isViewingCustomer ? "Customer Details" : "Customers";
       case 10:
@@ -452,6 +469,10 @@ class _AdminLayoutState extends State<AdminLayout> {
             });
           },
         );
+
+      // 12 - Campaigns
+      case 12:
+        return const CampaignsPage();
 
       // 11 - Settings
       case 11:

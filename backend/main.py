@@ -7,18 +7,28 @@ import os
 import logging
 from dotenv import load_dotenv
 
+# Coupon Engine routers
+from coupon.router import router as coupon_router
+from coupon.router import admin_router as coupon_admin_router
+from coupon.router import campaign_router
+
 logging.basicConfig(level=logging.INFO)
 
 load_dotenv()
 
-app = FastAPI(title="MediAI Pharmaceutical Chatbot")
+app = FastAPI(title="MediAI — Pharmaceutical Chatbot & Coupon Engine")
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_methods=["POST", "GET"],
+    allow_methods=["POST", "GET", "PUT", "DELETE"],
     allow_headers=["*"],
 )
+
+# ── Register Coupon Engine Routers ────────────────────────────────────────────
+app.include_router(coupon_router)
+app.include_router(coupon_admin_router)
+app.include_router(campaign_router)
 
 openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 gemini_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))

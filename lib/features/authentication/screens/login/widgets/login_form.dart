@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:med/data/repositories/authentication/authentication_repository.dart';
 import 'package:med/features/authentication/screens/passwor_configuration/forget_password.dart';
 import 'package:med/features/authentication/screens/signup/signup.dart';
 import 'package:med/navigation_menu.dart';
@@ -64,6 +65,8 @@ class _MLoginFormState extends State<MLoginForm> {
       }
 
       Get.offAll(() => const NavigationMenu());
+      // Save FCM token after login so push notifications can be delivered
+      AuthenticationRepository.saveFcmToken();
     } on FirebaseAuthException catch (e) {
       final msg = e.code == 'user-not-found'
           ? 'No account found for this email.'

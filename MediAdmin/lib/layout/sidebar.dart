@@ -147,6 +147,11 @@ class Sidebar extends StatelessWidget {
                     title: "Coupons",
                     index: 8,
                   ),
+                  buildMenuItem(
+                    icon: Icons.campaign,
+                    title: "Campaigns",
+                    index: 12,
+                  ),
 
                   const SizedBox(height: 24),
                   const Text(

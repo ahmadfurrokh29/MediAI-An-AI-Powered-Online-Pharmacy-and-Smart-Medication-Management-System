@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
 // ignore: avoid_web_libraries_in_flutter
 import 'dart:html' as html;
 import 'package:flutter/material.dart';
@@ -101,9 +100,7 @@ class _CreateProductPageState extends State<CreateProductPage> {
     input.onChange.listen((_) {
       final files = input.files;
       if (!completer.isCompleted) {
-        completer.complete(
-          (files != null && files.isNotEmpty) ? files : null,
-        );
+        completer.complete((files != null && files.isNotEmpty) ? files : null);
       }
     });
     input.click();
@@ -221,7 +218,10 @@ class _CreateProductPageState extends State<CreateProductPage> {
             : double.parse(_salePriceController.text),
         stock: int.parse(_stockController.text),
         images: _images.where((e) => e.url != null).map((e) => e.url!).toList(),
-        imagePublicIds: _images.where((e) => e.publicId != null).map((e) => e.publicId!).toList(),
+        imagePublicIds: _images
+            .where((e) => e.publicId != null)
+            .map((e) => e.publicId!)
+            .toList(),
         categoryId: selectedCategoryId!,
         categoryName: category.name,
         subcategoryId: selectedSubcategoryId ?? '',

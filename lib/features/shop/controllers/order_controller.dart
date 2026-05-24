@@ -6,6 +6,7 @@ import 'package:med/common/widgets/success_screen/success_screen.dart';
 import 'package:med/features/personalization/controllers/address_controller.dart';
 import 'package:med/features/personalization/controllers/user_controller.dart';
 import 'package:med/features/shop/controllers/cart_controller.dart';
+import 'package:med/features/shop/controllers/coupon_controller.dart';
 import 'package:med/features/shop/controllers/payment_controller.dart';
 import 'package:med/features/shop/models/order_model.dart';
 import 'package:med/navigation_menu.dart';
@@ -77,28 +78,48 @@ class OrderController extends GetxController {
       final user = UserController.instance.user.value;
 
       if (cart.cartItems.isEmpty) {
-        Get.snackbar('Cart Empty', 'Add items to cart before placing an order.',
-            snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.orange, colorText: Colors.white);
+        Get.snackbar(
+          'Cart Empty',
+          'Add items to cart before placing an order.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.orange,
+          colorText: Colors.white,
+        );
         return;
       }
 
       if (!addrCtrl.hasAddresses) {
-        Get.snackbar('No Address', 'Please add a shipping address first.',
-            snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.orange, colorText: Colors.white);
+        Get.snackbar(
+          'No Address',
+          'Please add a shipping address first.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.orange,
+          colorText: Colors.white,
+        );
         return;
       }
 
       // Build order items from cart
       final items = cart.cartItems
-          .map((ci) => OrderItemModel(
-                productId: ci.productId,
-                productName: ci.name,
-                price: ci.unitPrice,
-                quantity: ci.quantity.value,
-              ))
+          .map(
+            (ci) => OrderItemModel(
+              productId: ci.productId,
+              productName: ci.name,
+              price: ci.unitPrice,
+              quantity: ci.quantity.value,
+            ),
+          )
           .toList();
 
       final selectedAddr = addrCtrl.selectedAddress;
+
+      // ── Coupon integration ─────────────────────────────────────────────
+      final couponCtrl = Get.find<CouponController>();
+      final appliedCoupon = couponCtrl.appliedCoupon.value;
+      final couponCode = appliedCoupon?.code ?? '';
+      final couponDiscount = couponCtrl.discountAmount.value;
+      final finalTotal =
+          cart.subtotal + cart.shippingFee + cart.taxFee - couponDiscount;
 
       final order = OrderModel(
         id: '', // Firestore will assign
@@ -107,10 +128,10 @@ class OrderController extends GetxController {
         customerEmail: user.email,
         orderStatus: 'Pending',
         paymentStatus: payment.paymentStatusForOrder,
-        totalAmount: cart.totalAmount,
+        totalAmount: finalTotal.clamp(0, double.infinity),
         subtotal: cart.subtotal,
-        couponCode: '',
-        couponDiscount: 0,
+        couponCode: couponCode,
+        couponDiscount: couponDiscount,
         shippingFee: cart.shippingFee,
         createdAt: DateTime.now(),
         shippingAddress: selectedAddr,
@@ -118,14 +139,18 @@ class OrderController extends GetxController {
       );
 
       // Write to Firestore
-      await _db.collection('Orders').add(order.toMap());
+      final docRef = await _db.collection('Orders').add(order.toMap());
+
+      // Redeem coupon server-side (FastAPI + Firestore) if applied
+      if (appliedCoupon != null) {
+        await couponCtrl.redeemAppliedCoupon(docRef.id);
+      }
 
       // Clear cart
       await cart.clearCart();
 
       // Refresh orders list
       await fetchOrders();
-
       // Navigate to success screen
       Get.off(
         () => SuccessScreen(
@@ -138,8 +163,13 @@ class OrderController extends GetxController {
         ),
       );
     } catch (e) {
-      Get.snackbar('Error', 'Failed to place order: $e',
-          snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red, colorText: Colors.white);
+      Get.snackbar(
+        'Error',
+        'Failed to place order: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
     } finally {
       isLoading.value = false;
     }

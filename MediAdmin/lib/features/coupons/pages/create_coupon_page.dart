@@ -19,13 +19,17 @@ class _CreateCouponPageState extends State<CreateCouponPage> {
   final discountValueController = TextEditingController();
   final descriptionController = TextEditingController();
   final usageLimitController = TextEditingController();
+  final perUserLimitController = TextEditingController(text: '1');
+  final minOrderAmountController = TextEditingController(text: '0');
   final startDateController = TextEditingController();
   final endDateController = TextEditingController();
 
   String? selectedType;
+  String selectedTargetType = 'ALL';
   bool isActive = true;
 
   final List<String> types = ['PERCENTAGE', 'FLAT'];
+  final List<String> targetTypes = ['ALL', 'SPECIFIC', 'SEGMENT'];
 
   @override
   void dispose() {
@@ -33,6 +37,8 @@ class _CreateCouponPageState extends State<CreateCouponPage> {
     discountValueController.dispose();
     descriptionController.dispose();
     usageLimitController.dispose();
+    perUserLimitController.dispose();
+    minOrderAmountController.dispose();
     startDateController.dispose();
     endDateController.dispose();
     super.dispose();
@@ -398,16 +404,134 @@ class _CreateCouponPageState extends State<CreateCouponPage> {
                         ],
                       ),
 
+                      const SizedBox(height: 24),
+
+                      // Min Order Amount
+                      const Text(
+                        'Min Order Amount (Rs)',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF2D3748),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: minOrderAmountController,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          hintText: '0 = no minimum',
+                          hintStyle: const TextStyle(color: Color(0xFFA0AEC0)),
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFE2E8F0),
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFE2E8F0),
+                            ),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // Per-User Limit
+                      const Text(
+                        'Per-User Limit',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF2D3748),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: perUserLimitController,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          hintText: '1',
+                          hintStyle: const TextStyle(color: Color(0xFFA0AEC0)),
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFE2E8F0),
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFE2E8F0),
+                            ),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // Target Type
+                      const Text(
+                        'Target Audience',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF2D3748),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<String>(
+                        initialValue: selectedTargetType,
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFE2E8F0),
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFE2E8F0),
+                            ),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
+                        ),
+                        items: targetTypes
+                            .map(
+                              (t) => DropdownMenuItem(value: t, child: Text(t)),
+                            )
+                            .toList(),
+                        onChanged: (val) =>
+                            setState(() => selectedTargetType = val ?? 'ALL'),
+                      ),
+
                       const SizedBox(height: 32),
 
                       // Checkbox
                       CheckboxListTile(
                         value: isActive,
-                        onChanged: (val) {
-                          setState(() {
-                            isActive = val ?? true;
-                          });
-                        },
+                        onChanged: (val) =>
+                            setState(() => isActive = val ?? true),
                         title: const Text(
                           'Is Active',
                           style: TextStyle(
@@ -450,6 +574,17 @@ class _CreateCouponPageState extends State<CreateCouponPage> {
                                       usageLimitController.text.trim(),
                                     ) ??
                                     100,
+                                perUserLimit:
+                                    int.tryParse(
+                                      perUserLimitController.text.trim(),
+                                    ) ??
+                                    1,
+                                minOrderAmount:
+                                    double.tryParse(
+                                      minOrderAmountController.text.trim(),
+                                    ) ??
+                                    0.0,
+                                targetType: selectedTargetType,
                                 createdAt: DateTime.now(),
                               );
                               await controller.createCoupon(coupon);
