@@ -82,6 +82,7 @@ class SubCategoryController extends GetxController {
             return <String, dynamic>{
               'id': pDoc.id,
               'name': (p['Name'] ?? '').toString(),
+              'formulaName': (p['FormulaName'] ?? '').toString(),
               'brandName': (p['BrandName'] ?? '').toString(),
               'categoryName': (p['CategoryName'] ?? '').toString(),
               'description': (p['Description'] ?? '').toString(),
@@ -92,6 +93,10 @@ class SubCategoryController extends GetxController {
               'stock': _toInt(p['Stock']),
               'avgRating': _toDouble(p['avgRating']),
               'reviewCount': _toInt(p['reviewCount']),
+              'isFeatured': p['IsFeatured'] ?? false,
+              'isPrescribed': p['IsPrescribed'] ?? false,
+              'medicineForm': (p['MedicineForm'] ?? '').toString(),
+              'tabletsInPack': _toInt(p['TabletsInPack']),
               'subcategoryId': subId,
               'subcategoryName': subName,
             };

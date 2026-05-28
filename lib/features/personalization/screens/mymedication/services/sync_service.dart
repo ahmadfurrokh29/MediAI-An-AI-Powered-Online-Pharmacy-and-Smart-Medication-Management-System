@@ -337,7 +337,15 @@ class SyncService {
           continue;
         }
 
-        final medData = medDoc.data();
+        final medData = Map<String, dynamic>.from(medDoc.data());
+
+        // Preserve local available_stock — it is managed entirely by the
+        // stock-refill system (LocalDB) and must not be overwritten by the
+        // Firebase pull, otherwise a delivered-order refill is lost on restart.
+        final localMed = await LocalDB.getMedicineById(medDoc.id);
+        if (localMed != null) {
+          medData['available_stock'] = localMed['available_stock'];
+        }
 
         // Insert or update medicine in local DB (mark as synced)
         await LocalDB.insertMedicine(uid, medData, synced: true);

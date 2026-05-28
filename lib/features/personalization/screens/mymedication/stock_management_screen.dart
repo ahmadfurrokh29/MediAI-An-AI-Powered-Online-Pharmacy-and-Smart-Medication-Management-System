@@ -1,5 +1,9 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:get/get.dart';
+import 'package:med/features/shop/controllers/cart_controller.dart';
+import 'package:med/features/shop/screens/prescription_request/prescription_request_screen.dart';
 import 'package:med/utils/constants/colors.dart';
 import 'package:med/utils/constants/sizes.dart';
 import 'package:med/utils/helpers/helper_functions.dart';
@@ -20,6 +24,7 @@ class _StockManagementScreenState extends State<StockManagementScreen> {
   List<Map<String, dynamic>> outOfStockList = [];
   List<Map<String, dynamic>> lowStockList = [];
   List<Map<String, dynamic>> normalStockList = [];
+  final Set<String> _loadingMeds = {};
 
   @override
   void initState() {
@@ -204,11 +209,207 @@ class _StockManagementScreenState extends State<StockManagementScreen> {
     }
   }
 
-  void _addToCart(String medName) {
+  Future<void> _addToCartFromStock(Map<String, dynamic> med) async {
+    final medName = (med['medicine_name'] ?? '').toString().trim();
+    if (medName.isEmpty) return;
+    setState(() => _loadingMeds.add(medName));
+
+    try {
+      // 1. Calculate required tablets
+      final bool isChronic = med['chronic'] == 1 || med['chronic'] == true;
+      final int freq = _parseFrequency((med['frequency'] ?? '').toString());
+      final int alertDays =
+          int.tryParse(med['alert_before_days']?.toString() ?? '7') ?? 7;
+      final int currentStock =
+          int.tryParse(med['available_stock']?.toString() ?? '0') ?? 0;
+      final int totalDoses =
+          int.tryParse(med['total_no_of_doses']?.toString() ?? '0') ?? 0;
+
+      final int requiredTablets = isChronic
+          ? (freq * alertDays).clamp(1, 99999)
+          : (totalDoses - currentStock).clamp(1, 99999);
+
+      if (requiredTablets <= 0) {
+        _showSnackbar(
+          'No additional tablets required for $medName.',
+          Colors.orange,
+        );
+        return;
+      }
+
+      // 2. Search products by name (client-side contains match)
+      final snapshot =
+          await FirebaseFirestore.instance.collection('Products').get();
+      final query = medName.toLowerCase();
+
+      // Split into individual words so "ors" doesn't match "Monitors"
+      final queryWords = query
+          .split(RegExp(r'[\s\-_/]+'))
+          .map((w) => w.trim())
+          .where((w) => w.length > 1)
+          .toSet();
+
+      final matches = snapshot.docs.where((doc) {
+        final docData = doc.data() as Map<String, dynamic>;
+        // Firestore stores product names as 'Name' (PascalCase)
+        final productName =
+            (docData['Name'] ?? docData['name'] ?? '').toString().toLowerCase();
+        final productWords = productName
+            .split(RegExp(r'[\s\-_/]+'))
+            .map((w) => w.trim())
+            .where((w) => w.isNotEmpty)
+            .toSet();
+        // A match requires at least one query word to equal a product word exactly
+        return queryWords.any((qw) => productWords.contains(qw));
+      }).toList();
+
+      if (matches.isEmpty) {
+        // Medicine not found — ask user if they want to send prescription to store
+        if (!mounted) return;
+        final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+        // Try to pre-load the prescription image from LocalDB
+        List<String> prescriptionImages = [];
+        try {
+          prescriptionImages =
+              await LocalDB.getPrescriptionImagesForNames(uid, [medName]);
+        } catch (_) {}
+        final prescriptionBase64 =
+            prescriptionImages.isNotEmpty ? prescriptionImages.first : null;
+
+        if (!mounted) return;
+        final shouldSend = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16)),
+            title: const Text('Medicine Not Found'),
+            content: Text(
+              '"$medName" is not available in our store right now.\n\n'
+              'Would you like to send your prescription to our team? '
+              'We will check and get back to you.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('No, Cancel'),
+              ),
+              ElevatedButton.icon(
+                onPressed: () => Navigator.pop(ctx, true),
+                icon: const Icon(Icons.send, size: 16),
+                label: const Text('Yes, Send'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: MColors.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
+            ],
+          ),
+        );
+
+        if (shouldSend == true && mounted) {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => PrescriptionRequestScreen(
+                medicineName: medName,
+                prescriptionBase64: prescriptionBase64,
+              ),
+            ),
+          );
+        }
+        return;
+      }
+
+      // 3. Build candidate list with tabletsInPack (Firestore: 'TabletsInPack')
+      final candidates = matches.map((doc) {
+        final raw = Map<String, dynamic>.from(
+          doc.data() as Map<String, dynamic>,
+        );
+        // Normalize PascalCase Firestore fields → camelCase for CartController
+        // Compute pack size first so it can be included in data map
+        final rawPack = (raw['TabletsInPack'] ?? raw['tabletsInPack'] ?? 0);
+        final pack = ((rawPack as num?)?.toInt() ?? 0).clamp(1, 99999);
+        final data = <String, dynamic>{
+          'id': doc.id,
+          'name': raw['Name'] ?? raw['name'] ?? '',
+          'brandName': raw['BrandName'] ?? raw['brandName'] ?? '',
+          'images': raw['Images'] ?? raw['images'] ?? [],
+          'price': raw['Price'] ?? raw['price'] ?? 0,
+          'salePrice': raw['SalePrice'] ?? raw['salePrice'] ?? 0,
+          'stock': raw['Stock'] ?? raw['stock'] ?? 0,
+          'isPrescribed': raw['IsPrescribed'] ?? raw['isPrescribed'] ?? false,
+          'tabletsInPack': pack, // needed for stock refill on delivery
+        };
+        return _ProductCandidate(data: data, tabletsInPack: pack);
+      }).toList();
+
+      // 4. Pick best candidate and quantity using case logic
+      _ProductCandidate selected;
+      int selectedQty;
+
+      if (candidates.length == 1) {
+        // Case 1: Single match
+        selected = candidates.first;
+        selectedQty =
+            (requiredTablets / selected.tabletsInPack).ceil().clamp(1, 99999);
+      } else {
+        // Case 2: Multiple matches
+        // Find candidates whose single pack already covers the requirement
+        final sufficient =
+            candidates
+                .where((c) => c.tabletsInPack >= requiredTablets)
+                .toList();
+
+        if (sufficient.isNotEmpty) {
+          // Subcase 1: pick the one with LEAST tablets (minimum wastage), qty=1
+          sufficient.sort((a, b) => a.tabletsInPack.compareTo(b.tabletsInPack));
+          selected = sufficient.first;
+          selectedQty = 1;
+        } else {
+          // Subcase 2: none covers alone → pick GREATEST pack, increase qty
+          candidates.sort(
+            (a, b) => b.tabletsInPack.compareTo(a.tabletsInPack),
+          );
+          selected = candidates.first;
+          selectedQty =
+              (requiredTablets / selected.tabletsInPack)
+                  .ceil()
+                  .clamp(1, 99999);
+        }
+      }
+
+      // 5. Add to cart (suppress default snackbar)
+      final cartCtrl = Get.find<CartController>();
+      await cartCtrl.addToCart(
+        selected.data,
+        quantity: selectedQty,
+        showSnackbar: false,
+      );
+
+      // 6. Show informative snackbar
+      final productName = selected.data['name'].toString();
+      final totalTablets = selectedQty * selected.tabletsInPack;
+      _showSnackbar(
+        'Added $productName × $selectedQty pack${selectedQty > 1 ? 's' : ''} '
+        'to cart ($totalTablets tablets)',
+        MColors.primary,
+      );
+    } catch (e) {
+      _showSnackbar('Error: $e', Colors.red);
+    } finally {
+      if (mounted) setState(() => _loadingMeds.remove(medName));
+    }
+  }
+
+  void _showSnackbar(String message, Color color) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(" '$medName' added to cart!"),
-        backgroundColor: MColors.primary,
+        content: Text(message),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
       ),
     );
   }
@@ -500,12 +701,23 @@ class _StockManagementScreenState extends State<StockManagementScreen> {
             tooltip: 'Edit Stock',
           ),
           IconButton(
-            icon: Icon(
-              Icons.add_shopping_cart,
-              color: isLowOrOut ? Colors.red : MColors.primary,
-              size: 20,
-            ),
-            onPressed: () => _addToCart(name),
+            icon: _loadingMeds.contains(name)
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.grey,
+                    ),
+                  )
+                : Icon(
+                    Icons.add_shopping_cart,
+                    color: isLowOrOut ? Colors.red : MColors.primary,
+                    size: 20,
+                  ),
+            onPressed: _loadingMeds.contains(name)
+                ? null
+                : () => _addToCartFromStock(med),
             tooltip: 'Add to Cart',
           ),
         ],
@@ -515,3 +727,10 @@ class _StockManagementScreenState extends State<StockManagementScreen> {
 }
 
 enum StockLevel { out, low, normal }
+
+/// Lightweight holder for a Firestore product candidate during cart matching.
+class _ProductCandidate {
+  final Map<String, dynamic> data;
+  final int tabletsInPack;
+  const _ProductCandidate({required this.data, required this.tabletsInPack});
+}

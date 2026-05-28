@@ -12,6 +12,7 @@ import 'features/orders/controllers/order_controller.dart';
 import 'features/customers/controllers/customer_controller.dart';
 import 'features/dashboard/controllers/dashboard_controller.dart';
 import 'features/banners/controllers/banner_controller.dart';
+import 'features/prescription_requests/controllers/prescription_request_controller.dart';
 import 'layout/admin_layout.dart';
 import 'utils/seed_data.dart';
 
@@ -32,6 +33,7 @@ class MediAdminApp extends StatelessWidget {
     Get.put(CustomerController());
     Get.put(DashboardController());
     Get.put(BannerController());
+    Get.put(PrescriptionRequestController());
 
     // Seed dummy data for testing (runs once, skips if data exists)
     SeedData.run();

@@ -10,7 +10,8 @@ class SeedData {
     try {
       await _cleanAdminDocsFromUsers(); // Remove any admin docs that leaked into Users
       await _seedCustomers();
-      await _seedOrders();
+      // NOTE: _seedOrders() removed — it was re-seeding dummy orders every time
+      // the Orders collection was empty (e.g. after manual deletion).
     } catch (e) {
       if (kDebugMode) print('[SeedData] Error: $e');
     }

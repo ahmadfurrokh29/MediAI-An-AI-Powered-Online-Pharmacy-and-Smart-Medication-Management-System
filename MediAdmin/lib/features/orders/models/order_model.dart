@@ -5,12 +5,14 @@ class OrderItemModel {
   final String productName;
   final double price;
   final int quantity;
+  final bool isPrescribed;
 
   OrderItemModel({
     required this.productId,
     required this.productName,
     required this.price,
     required this.quantity,
+    this.isPrescribed = false,
   });
 
   double get subtotal => price * quantity;
@@ -24,6 +26,7 @@ class OrderItemModel {
           'Unknown Product',
       price: (map['price'] as num? ?? 0).toDouble(),
       quantity: (map['quantity'] as num? ?? 1).toInt(),
+      isPrescribed: map['isPrescribed'] as bool? ?? false,
     );
   }
 
@@ -32,6 +35,7 @@ class OrderItemModel {
     'productName': productName,
     'price': price,
     'quantity': quantity,
+    'isPrescribed': isPrescribed,
   };
 }
 
@@ -50,6 +54,7 @@ class OrderModel {
   final double shippingFee;
   final Map<String, dynamic> shippingAddress;
   final DateTime createdAt;
+  final List<String> prescriptions;
 
   OrderModel({
     required this.id,
@@ -66,6 +71,7 @@ class OrderModel {
     required this.shippingFee,
     required this.shippingAddress,
     required this.createdAt,
+    this.prescriptions = const [],
   });
 
   int get itemCount => items.length;
@@ -140,6 +146,7 @@ class OrderModel {
           data['ShippingAddress'] as Map<String, dynamic>? ??
           {}),
       createdAt: createdAt,
+      prescriptions: List<String>.from(data['prescriptions'] ?? []),
     );
   }
 
@@ -176,24 +183,32 @@ class OrderModel {
     'shippingFee': shippingFee,
     'shippingAddress': shippingAddress,
     'createdAt': Timestamp.fromDate(createdAt),
+    'prescriptions': prescriptions,
   };
 
-  OrderModel copyWith({String? orderStatus, String? paymentStatus}) {
+  OrderModel copyWith({
+    String? orderStatus,
+    String? paymentStatus,
+    List<OrderItemModel>? items,
+    double? totalAmount,
+    double? subtotal,
+  }) {
     return OrderModel(
       id: id,
       customerId: customerId,
       customerName: customerName,
       customerEmail: customerEmail,
-      items: items,
+      items: items ?? this.items,
       orderStatus: orderStatus ?? this.orderStatus,
       paymentStatus: paymentStatus ?? this.paymentStatus,
-      totalAmount: totalAmount,
-      subtotal: subtotal,
+      totalAmount: totalAmount ?? this.totalAmount,
+      subtotal: subtotal ?? this.subtotal,
       couponCode: couponCode,
       couponDiscount: couponDiscount,
       shippingFee: shippingFee,
       shippingAddress: shippingAddress,
       createdAt: createdAt,
+      prescriptions: prescriptions,
     );
   }
 }

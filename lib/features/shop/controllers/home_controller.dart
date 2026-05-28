@@ -210,6 +210,7 @@ class HomeController extends GetxController {
     return {
       'id': d.id,
       'name': (m['Name'] ?? '').toString(),
+      'formulaName': (m['FormulaName'] ?? '').toString(),
       'brandName': (m['BrandName'] ?? '').toString(),
       'categoryName': (m['CategoryName'] ?? '').toString(),
       'subcategoryName': (m['SubcategoryName'] ?? '').toString(),
@@ -223,6 +224,10 @@ class HomeController extends GetxController {
       'stock': _toInt(m['Stock']),
       'avgRating': _toDouble(m['avgRating']),
       'reviewCount': _toInt(m['reviewCount']),
+      'isFeatured': m['IsFeatured'] ?? false,
+      'isPrescribed': m['IsPrescribed'] ?? false,
+      'medicineForm': (m['MedicineForm'] ?? '').toString(),
+      'tabletsInPack': _toInt(m['TabletsInPack']),
     };
   }
 

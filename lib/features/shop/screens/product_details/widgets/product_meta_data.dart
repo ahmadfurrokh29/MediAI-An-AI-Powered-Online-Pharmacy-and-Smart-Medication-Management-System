@@ -17,6 +17,7 @@ class MProductMetaData extends StatelessWidget {
     final double price = (productData['price'] ?? 0).toDouble();
     final double salePrice = (productData['salePrice'] ?? 0).toDouble();
     final String title = (productData['name'] ?? '').toString();
+    final String formulaName = (productData['formulaName'] ?? '').toString();
     final String brand = (productData['brandName'] ?? '').toString();
     final int stock = ((productData['stock'] ?? 0) as num).toInt();
     final bool inStock = stock > 0;
@@ -72,6 +73,18 @@ class MProductMetaData extends StatelessWidget {
         /// Title
         MProductTitleText(title: title),
         const SizedBox(height: MSizes.spaceBtwItems / 1.5),
+
+        /// Formula name (generic/formula name for medicines)
+        if (formulaName.isNotEmpty) ...[
+          Text(
+            '($formulaName)',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Colors.grey.shade600,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+          const SizedBox(height: MSizes.spaceBtwItems / 1.5),
+        ],
 
         /// Stock
         Row(

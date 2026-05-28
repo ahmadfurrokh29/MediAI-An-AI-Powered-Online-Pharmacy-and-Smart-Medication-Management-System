@@ -5,12 +5,17 @@ class OrderItemModel {
   final String productName;
   final double price;
   final int quantity;
+  final bool isPrescribed;
+  /// Number of tablets/units per pack. 0 means not applicable (e.g. syrups).
+  final int tabletsInPack;
 
   const OrderItemModel({
     required this.productId,
     required this.productName,
     required this.price,
     required this.quantity,
+    this.isPrescribed = false,
+    this.tabletsInPack = 0,
   });
 
   factory OrderItemModel.fromMap(Map<String, dynamic> map) => OrderItemModel(
@@ -18,6 +23,8 @@ class OrderItemModel {
     productName: map['productName'] as String? ?? '',
     price: (map['price'] as num? ?? 0).toDouble(),
     quantity: (map['quantity'] as num? ?? 1).toInt(),
+    isPrescribed: map['isPrescribed'] as bool? ?? false,
+    tabletsInPack: (map['tabletsInPack'] as num? ?? 0).toInt(),
   );
 
   Map<String, dynamic> toMap() => {
@@ -25,6 +32,8 @@ class OrderItemModel {
     'productName': productName,
     'price': price,
     'quantity': quantity,
+    'isPrescribed': isPrescribed,
+    'tabletsInPack': tabletsInPack,
   };
 }
 
@@ -43,6 +52,7 @@ class OrderModel {
   final DateTime createdAt;
   final Map<String, dynamic> shippingAddress;
   final List<OrderItemModel> items;
+  final List<String> prescriptions; // base64-encoded prescription images
 
   const OrderModel({
     required this.id,
@@ -59,6 +69,7 @@ class OrderModel {
     required this.createdAt,
     required this.shippingAddress,
     required this.items,
+    this.prescriptions = const [],
   });
 
   static OrderModel empty() => OrderModel(
@@ -76,6 +87,7 @@ class OrderModel {
     createdAt: DateTime.now(),
     shippingAddress: {},
     items: [],
+    prescriptions: [],
   );
 
   factory OrderModel.fromSnapshot(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -99,6 +111,7 @@ class OrderModel {
       items: (data['items'] as List<dynamic>? ?? [])
           .map((e) => OrderItemModel.fromMap(e as Map<String, dynamic>? ?? {}))
           .toList(),
+      prescriptions: List<String>.from(data['prescriptions'] ?? []),
     );
   }
 
@@ -140,5 +153,6 @@ class OrderModel {
     'shippingFee': shippingFee,
     'shippingAddress': shippingAddress,
     'createdAt': Timestamp.fromDate(createdAt),
+    'prescriptions': prescriptions,
   };
 }

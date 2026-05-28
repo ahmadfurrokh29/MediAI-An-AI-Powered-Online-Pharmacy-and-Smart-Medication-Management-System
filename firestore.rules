@@ -57,7 +57,9 @@ service cloud.firestore {
 
     // ── Orders ──
     match /Orders/{orderId} {
-      allow read, write: if isAuth();
+      allow read: if isAuth();
+      allow create, update: if isAuth();
+      allow delete: if isAdmin();
     }
 
     // ── Coupons (authenticated read, admin write) ──
@@ -97,6 +99,18 @@ service cloud.firestore {
     match /Announcements/{announcementId} {
       allow read: if isAuth();
       allow create, update, delete: if isAdmin();
+    }
+
+    // ── PrescriptionRequests ──
+    match /PrescriptionRequests/{docId} {
+      // Authenticated users can create requests for themselves
+      allow create: if isAuth() && request.resource.data.customerId == request.auth.uid;
+      // Users can read their own requests; admins can read all
+      allow read: if isAuth() && (
+        resource.data.customerId == request.auth.uid || isAdmin()
+      );
+      // Only admins can update (respond) or delete
+      allow update, delete: if isAdmin();
     }
 
     // ── Users ──

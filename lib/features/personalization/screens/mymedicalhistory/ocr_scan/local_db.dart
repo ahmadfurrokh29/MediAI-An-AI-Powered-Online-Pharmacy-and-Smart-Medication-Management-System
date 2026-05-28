@@ -14,7 +14,7 @@ class LocalDB {
     String path = join(await getDatabasesPath(), 'medicines.db');
     return await openDatabase(
       path,
-      version: 8,
+      version: 9,
       onCreate: (db, version) async {
         // Medicines Table (Added total_no_of_doses & available_stock & alert_before_days & sync metadata)
         await db.execute('''
@@ -124,6 +124,11 @@ class LocalDB {
         if (oldVersion < 8) {
           await db.execute(
             "ALTER TABLE medicines ADD COLUMN disease_name TEXT DEFAULT ''",
+          );
+        }
+        if (oldVersion < 9) {
+          await db.execute(
+            'ALTER TABLE medicines ADD COLUMN prescription_image TEXT',
           );
         }
       },
@@ -383,6 +388,133 @@ class LocalDB {
       'alarms',
       where: 'uid = ? AND synced = ?',
       whereArgs: [uid, 0],
+    );
+  }
+
+  /// Fetch distinct non-null prescription images for medicines whose names
+  /// fuzzy-match any of the given [names] (case-insensitive contains check).
+  /// Reads from the dedicated [prescription_images] table which is created
+  /// lazily — so it works on any DB version without a migration.
+  static Future<List<String>> getPrescriptionImagesForNames(
+    String uid,
+    List<String> names,
+  ) async {
+    if (names.isEmpty) return [];
+    await _ensurePrescriptionTable();
+    final db = await database;
+    final rows = await db.query(
+      'prescription_images',
+      columns: ['medicine_name', 'image_base64'],
+      where: 'uid = ?',
+      whereArgs: [uid],
+    );
+    final seen = <String>{};
+    final result = <String>[];
+    for (final row in rows) {
+      final img = row['image_base64'] as String?;
+      if (img == null || img.isEmpty) continue;
+      final medName = (row['medicine_name'] as String? ?? '').toLowerCase();
+      final matched = names.any((n) {
+        final q = n.toLowerCase();
+        return medName.contains(q) || q.contains(medName);
+      });
+      if (matched && !seen.contains(img)) {
+        seen.add(img);
+        result.add(img);
+      }
+    }
+    return result;
+  }
+
+  /// Ensures the [prescription_images] table exists. Uses
+  /// CREATE TABLE IF NOT EXISTS so it is safe to call on any DB version
+  /// without needing a schema migration.
+  static Future<void> _ensurePrescriptionTable() async {
+    final db = await database;
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS prescription_images (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        uid         TEXT    NOT NULL,
+        medicine_name TEXT  NOT NULL,
+        image_base64  TEXT  NOT NULL,
+        created_at  INTEGER NOT NULL
+      )
+    ''');
+  }
+
+  /// Saves (or updates) a prescription image for the given medicine name.
+  /// Creates the [prescription_images] table if it doesn't exist yet.
+  static Future<void> savePrescriptionImage(
+    String uid,
+    String medicineName,
+    String imageBase64,
+  ) async {
+    await _ensurePrescriptionTable();
+    final db = await database;
+    final key = medicineName.toLowerCase().trim();
+    final existing = await db.query(
+      'prescription_images',
+      columns: ['id'],
+      where: 'uid = ? AND medicine_name = ?',
+      whereArgs: [uid, key],
+      limit: 1,
+    );
+    if (existing.isEmpty) {
+      await db.insert('prescription_images', {
+        'uid': uid,
+        'medicine_name': key,
+        'image_base64': imageBase64,
+        'created_at': DateTime.now().millisecondsSinceEpoch,
+      });
+    } else {
+      await db.update(
+        'prescription_images',
+        {
+          'image_base64': imageBase64,
+          'created_at': DateTime.now().millisecondsSinceEpoch,
+        },
+        where: 'uid = ? AND medicine_name = ?',
+        whereArgs: [uid, key],
+      );
+    }
+  }
+
+  // ── Stock refill tracking ─────────────────────────────────────────────────
+
+  static Future<void> _ensureRefilledOrdersTable() async {
+    final db = await database;
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS refilled_orders (
+        order_id    TEXT    PRIMARY KEY,
+        refilled_at INTEGER NOT NULL
+      )
+    ''');
+  }
+
+  /// Returns true if stock has already been refilled for this order.
+  static Future<bool> isOrderStockRefilled(String orderId) async {
+    await _ensureRefilledOrdersTable();
+    final db = await database;
+    final result = await db.query(
+      'refilled_orders',
+      where: 'order_id = ?',
+      whereArgs: [orderId],
+      limit: 1,
+    );
+    return result.isNotEmpty;
+  }
+
+  /// Marks an order as having its stock refilled so it is not processed twice.
+  static Future<void> markOrderStockRefilled(String orderId) async {
+    await _ensureRefilledOrdersTable();
+    final db = await database;
+    await db.insert(
+      'refilled_orders',
+      {
+        'order_id': orderId,
+        'refilled_at': DateTime.now().millisecondsSinceEpoch,
+      },
+      conflictAlgorithm: ConflictAlgorithm.ignore,
     );
   }
 

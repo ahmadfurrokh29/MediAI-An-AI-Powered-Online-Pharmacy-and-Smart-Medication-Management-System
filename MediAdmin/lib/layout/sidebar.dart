@@ -134,6 +134,11 @@ class Sidebar extends StatelessWidget {
                     title: "Orders",
                     index: 6,
                   ),
+                  buildMenuItem(
+                    icon: Icons.medical_services_outlined,
+                    title: "Prescription Requests",
+                    index: 13,
+                  ),
 
                   const SizedBox(height: 24),
                   const Text(

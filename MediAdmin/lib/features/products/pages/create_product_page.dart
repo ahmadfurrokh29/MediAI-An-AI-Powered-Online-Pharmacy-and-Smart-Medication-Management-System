@@ -35,6 +35,9 @@ class _CreateProductPageState extends State<CreateProductPage> {
 
   bool isFeatured = false;
   bool isActive = true;
+  bool isPrescribed = false;
+  String? selectedMedicineForm;
+  final _tabletsInPackController = TextEditingController();
   bool isLoading = false;
 
   String? selectedCategoryId;
@@ -85,6 +88,7 @@ class _CreateProductPageState extends State<CreateProductPage> {
     _priceController.dispose();
     _salePriceController.dispose();
     _stockController.dispose();
+    _tabletsInPackController.dispose();
     super.dispose();
   }
 
@@ -231,6 +235,9 @@ class _CreateProductPageState extends State<CreateProductPage> {
         isFeatured: isFeatured,
         isRecommended: false,
         isActive: isActive,
+        isPrescribed: isPrescribed,
+        medicineForm: selectedMedicineForm ?? '',
+        tabletsInPack: int.tryParse(_tabletsInPackController.text.trim()) ?? 0,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
@@ -413,6 +420,128 @@ class _CreateProductPageState extends State<CreateProductPage> {
                           );
                         },
                       ),
+
+                      const SizedBox(height: 20),
+
+                      // --- Prescribed ---
+                      Row(
+                        children: [
+                          const Text(
+                            'Prescribed',
+                            style: TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Optional',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade500,
+                            ),
+                          ),
+                          const Spacer(),
+                          Switch(
+                            value: isPrescribed,
+                            activeColor: Colors.blue,
+                            onChanged: (val) =>
+                                setState(() => isPrescribed = val),
+                          ),
+                          Text(
+                            isPrescribed ? 'Yes' : 'No',
+                            style: TextStyle(
+                              color: isPrescribed
+                                  ? Colors.blue.shade700
+                                  : Colors.grey.shade600,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // --- Medicine Form ---
+                      Row(
+                        children: [
+                          const Text(
+                            'Medicine Form',
+                            style: TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Optional',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade500,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<String>(
+                        value: selectedMedicineForm,
+                        decoration: InputDecoration(
+                          hintText: 'Select form (e.g. Tablets)',
+                          filled: true,
+                          fillColor: Colors.grey.shade100,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                        items: const [
+                          DropdownMenuItem(
+                              value: 'Tablets', child: Text('Tablets')),
+                          DropdownMenuItem(
+                              value: 'Syrup', child: Text('Syrup')),
+                          DropdownMenuItem(
+                              value: 'Drops', child: Text('Drops')),
+                          DropdownMenuItem(
+                              value: 'Capsules', child: Text('Capsules')),
+                          DropdownMenuItem(
+                              value: 'Cream', child: Text('Cream')),
+                          DropdownMenuItem(
+                              value: 'Injection', child: Text('Injection')),
+                        ],
+                        onChanged: (val) =>
+                            setState(() => selectedMedicineForm = val),
+                      ),
+
+                      // --- Tablets in Pack (only visible when form is Tablets or Capsules) ---
+                      if (selectedMedicineForm == 'Tablets' ||
+                          selectedMedicineForm == 'Capsules') ...[
+                        const SizedBox(height: 20),
+                        Row(
+                          children: [
+                            Text(
+                              '${selectedMedicineForm} in Pack',
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.w600),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Optional',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade500,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: _tabletsInPackController,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            hintText: 'e.g. 10, 20, 30',
+                            filled: true,
+                            fillColor: Colors.grey.shade100,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                        ),
+                      ],
 
                       const SizedBox(height: 20),
                       const Text(

@@ -44,6 +44,7 @@ class ProductsTable extends StatelessWidget {
                 DataColumn(label: Text("Brand")),
                 DataColumn(label: Text("Price")),
                 DataColumn(label: Text("Stock")),
+                DataColumn(label: Text("Prescribed")),
                 DataColumn(label: Text("Featured")),
                 DataColumn(label: Text("Status")),
                 DataColumn(label: Text("Date")),
@@ -151,6 +152,31 @@ class ProductsTable extends StatelessWidget {
                     ),
 
                     DataCell(
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: product.isPrescribed
+                              ? Colors.blue.shade100
+                              : Colors.grey.shade200,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          product.isPrescribed ? 'Yes' : 'No',
+                          style: TextStyle(
+                            color: product.isPrescribed
+                                ? Colors.blue.shade900
+                                : Colors.grey.shade700,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    DataCell(
                       Switch(
                         value: product.isFeatured,
                         activeThumbColor: Colors.green,
@@ -219,6 +245,9 @@ class ProductsTable extends StatelessWidget {
                                   'isFeatured': product.isFeatured,
                                   'isRecommended': product.isRecommended,
                                   'isActive': product.isActive,
+                                  'isPrescribed': product.isPrescribed,
+                                  'medicineForm': product.medicineForm,
+                                  'tabletsInPack': product.tabletsInPack,
                                 });
                               }
                             },

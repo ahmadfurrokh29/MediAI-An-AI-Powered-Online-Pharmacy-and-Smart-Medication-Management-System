@@ -142,8 +142,23 @@ class OrderController extends GetxController {
   }
 
   Future<void> deleteOrder(String orderId) async {
+    if (orderId.isEmpty) return;
     try {
-      await _firestore.collection('Orders').doc(orderId).delete();
+      final docRef = _firestore.collection('Orders').doc(orderId);
+      await docRef.delete();
+
+      // Verify the delete was committed to the server before updating local state
+      final check = await docRef.get();
+      if (check.exists) {
+        Get.snackbar(
+          'Error',
+          'Failed to delete order: permission denied or server error.',
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+        return;
+      }
+
       _orders.removeWhere((o) => o.id == orderId);
       Get.snackbar(
         'Success',
@@ -158,6 +173,129 @@ class OrderController extends GetxController {
         backgroundColor: Colors.red,
         colorText: Colors.white,
       );
+    }
+  }
+
+  // ── Item-level order editing ───────────────────────────────────────────────
+
+  /// Removes item at [itemIndex] from the order and recalculates totals.
+  Future<void> removeOrderItem(String orderId, int itemIndex) async {
+    final idx = _orders.indexWhere((o) => o.id == orderId);
+    if (idx == -1) return;
+    final order = _orders[idx];
+    if (itemIndex < 0 || itemIndex >= order.items.length) return;
+    final newItems = List<OrderItemModel>.from(order.items)..removeAt(itemIndex);
+    final newSubtotal = newItems.fold(0.0, (s, i) => s + i.subtotal);
+    final newTotal = (newSubtotal + order.shippingFee - order.couponDiscount)
+        .clamp(0, double.infinity)
+        .toDouble();
+    try {
+      await _firestore.collection('Orders').doc(orderId).update({
+        'items': newItems.map((e) => e.toMap()).toList(),
+        'subtotal': newSubtotal,
+        'totalAmount': newTotal,
+      });
+      _orders[idx] = order.copyWith(
+        items: newItems,
+        subtotal: newSubtotal,
+        totalAmount: newTotal,
+      );
+      _orders.refresh();
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to remove item: $e',
+          backgroundColor: Colors.red, colorText: Colors.white);
+    }
+  }
+
+  /// Changes quantity of item at [itemIndex] to [newQty] (min 1).
+  Future<void> updateItemQuantity(
+      String orderId, int itemIndex, int newQty) async {
+    if (newQty < 1) return;
+    final idx = _orders.indexWhere((o) => o.id == orderId);
+    if (idx == -1) return;
+    final order = _orders[idx];
+    if (itemIndex < 0 || itemIndex >= order.items.length) return;
+    final old = order.items[itemIndex];
+    final updated = OrderItemModel(
+      productId: old.productId,
+      productName: old.productName,
+      price: old.price,
+      quantity: newQty,
+      isPrescribed: old.isPrescribed,
+    );
+    final newItems = List<OrderItemModel>.from(order.items)..[itemIndex] = updated;
+    final newSubtotal = newItems.fold(0.0, (s, i) => s + i.subtotal);
+    final newTotal = (newSubtotal + order.shippingFee - order.couponDiscount)
+        .clamp(0, double.infinity)
+        .toDouble();
+    try {
+      await _firestore.collection('Orders').doc(orderId).update({
+        'items': newItems.map((e) => e.toMap()).toList(),
+        'subtotal': newSubtotal,
+        'totalAmount': newTotal,
+      });
+      _orders[idx] = order.copyWith(
+        items: newItems,
+        subtotal: newSubtotal,
+        totalAmount: newTotal,
+      );
+      _orders.refresh();
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to update quantity: $e',
+          backgroundColor: Colors.red, colorText: Colors.white);
+    }
+  }
+
+  /// Adds a new item to the order.
+  Future<void> addOrderItem(String orderId, OrderItemModel newItem) async {
+    final idx = _orders.indexWhere((o) => o.id == orderId);
+    if (idx == -1) return;
+    final order = _orders[idx];
+    final newItems = List<OrderItemModel>.from(order.items)..add(newItem);
+    final newSubtotal = newItems.fold(0.0, (s, i) => s + i.subtotal);
+    final newTotal = (newSubtotal + order.shippingFee - order.couponDiscount)
+        .clamp(0, double.infinity)
+        .toDouble();
+    try {
+      await _firestore.collection('Orders').doc(orderId).update({
+        'items': newItems.map((e) => e.toMap()).toList(),
+        'subtotal': newSubtotal,
+        'totalAmount': newTotal,
+      });
+      _orders[idx] = order.copyWith(
+        items: newItems,
+        subtotal: newSubtotal,
+        totalAmount: newTotal,
+      );
+      _orders.refresh();
+      Get.snackbar('Success', '${newItem.productName} added to order',
+          backgroundColor: Colors.green, colorText: Colors.white);
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to add item: $e',
+          backgroundColor: Colors.red, colorText: Colors.white);
+    }
+  }
+
+  /// Sends a notification to the customer of the given order.
+  Future<void> sendNotification(
+      String customerId, String orderId, String message) async {
+    if (customerId.isEmpty) return;
+    try {
+      await _firestore
+          .collection('Users')
+          .doc(customerId)
+          .collection('Notifications')
+          .add({
+        'title': 'Order #${orderId.length > 6 ? orderId.substring(0, 6).toUpperCase() : orderId.toUpperCase()}',
+        'body': message,
+        'orderId': orderId,
+        'type': 'order_update',
+        'isRead': false,
+        'createdAt': Timestamp.now(),
+      });
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to send notification: $e',
+          backgroundColor: Colors.red, colorText: Colors.white);
     }
   }
 

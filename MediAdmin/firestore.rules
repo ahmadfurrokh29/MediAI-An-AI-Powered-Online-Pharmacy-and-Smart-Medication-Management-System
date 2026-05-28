@@ -53,9 +53,11 @@ service cloud.firestore {
       }
     }
 
-    // Orders - authenticated read/write
+    // Orders - authenticated read/write, admin delete
     match /Orders/{orderId} {
-      allow read, write: if isAuth();
+      allow read: if isAuth();
+      allow create, update: if isAuth();
+      allow delete: if isAdmin();
     }
 
     // Coupons - authenticated read, admin write

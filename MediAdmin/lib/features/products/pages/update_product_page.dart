@@ -41,6 +41,9 @@ class _UpdateProductPageState extends State<UpdateProductPage> {
   late bool isFeatured;
   late bool isRecommended;
   late bool isActive;
+  bool isPrescribed = false;
+  String? selectedMedicineForm;
+  late final TextEditingController _tabletsInPackController;
   bool isLoading = false;
 
   late String? selectedCategoryId;
@@ -86,6 +89,14 @@ class _UpdateProductPageState extends State<UpdateProductPage> {
     isFeatured = widget.product['isFeatured'] ?? false;
     isRecommended = widget.product['isRecommended'] ?? false;
     isActive = widget.product['isActive'] ?? true;
+    isPrescribed = widget.product['isPrescribed'] ?? false;
+    final formVal = (widget.product['medicineForm'] ?? '').toString();
+    selectedMedicineForm = formVal.isEmpty ? null : formVal;
+    _tabletsInPackController = TextEditingController(
+      text: (widget.product['tabletsInPack'] ?? 0) == 0
+          ? ''
+          : widget.product['tabletsInPack'].toString(),
+    );
     selectedCategoryId = widget.product['categoryId'];
     selectedSubcategoryId = widget.product['subcategoryId'];
     selectedBrandId = widget.product['brandId'];
@@ -134,6 +145,7 @@ class _UpdateProductPageState extends State<UpdateProductPage> {
     _priceController.dispose();
     _salePriceController.dispose();
     _stockController.dispose();
+    _tabletsInPackController.dispose();
     super.dispose();
   }
 
@@ -276,6 +288,9 @@ class _UpdateProductPageState extends State<UpdateProductPage> {
         isFeatured: isFeatured,
         isRecommended: isRecommended,
         isActive: isActive,
+        isPrescribed: isPrescribed,
+        medicineForm: selectedMedicineForm ?? '',
+        tabletsInPack: int.tryParse(_tabletsInPackController.text.trim()) ?? 0,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
@@ -445,6 +460,128 @@ class _UpdateProductPageState extends State<UpdateProductPage> {
                           );
                         },
                       ),
+
+                      const SizedBox(height: 20),
+
+                      // --- Prescribed ---
+                      Row(
+                        children: [
+                          const Text(
+                            'Prescribed',
+                            style: TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Optional',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade500,
+                            ),
+                          ),
+                          const Spacer(),
+                          Switch(
+                            value: isPrescribed,
+                            activeColor: Colors.blue,
+                            onChanged: (val) =>
+                                setState(() => isPrescribed = val),
+                          ),
+                          Text(
+                            isPrescribed ? 'Yes' : 'No',
+                            style: TextStyle(
+                              color: isPrescribed
+                                  ? Colors.blue.shade700
+                                  : Colors.grey.shade600,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // --- Medicine Form ---
+                      Row(
+                        children: [
+                          const Text(
+                            'Medicine Form',
+                            style: TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Optional',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade500,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<String>(
+                        value: selectedMedicineForm,
+                        decoration: InputDecoration(
+                          hintText: 'Select form (e.g. Tablets)',
+                          filled: true,
+                          fillColor: Colors.grey.shade100,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                        items: const [
+                          DropdownMenuItem(
+                              value: 'Tablets', child: Text('Tablets')),
+                          DropdownMenuItem(
+                              value: 'Syrup', child: Text('Syrup')),
+                          DropdownMenuItem(
+                              value: 'Drops', child: Text('Drops')),
+                          DropdownMenuItem(
+                              value: 'Capsules', child: Text('Capsules')),
+                          DropdownMenuItem(
+                              value: 'Cream', child: Text('Cream')),
+                          DropdownMenuItem(
+                              value: 'Injection', child: Text('Injection')),
+                        ],
+                        onChanged: (val) =>
+                            setState(() => selectedMedicineForm = val),
+                      ),
+
+                      // --- Tablets/Capsules in Pack ---
+                      if (selectedMedicineForm == 'Tablets' ||
+                          selectedMedicineForm == 'Capsules') ...[
+                        const SizedBox(height: 20),
+                        Row(
+                          children: [
+                            Text(
+                              '${selectedMedicineForm} in Pack',
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.w600),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Optional',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade500,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: _tabletsInPackController,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            hintText: 'e.g. 10, 20, 30',
+                            filled: true,
+                            fillColor: Colors.grey.shade100,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                        ),
+                      ],
 
                       const SizedBox(height: 20),
                       const Text(

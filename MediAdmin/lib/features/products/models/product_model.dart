@@ -20,6 +20,9 @@ class ProductModel {
   final bool isFeatured; // For popular products in category
   final bool isRecommended; // For recommended products shown per category
   final bool isActive;
+  final bool isPrescribed; // Prescription required
+  final String medicineForm; // 'Tablets' | 'Syrup' | 'Drops' | ''
+  final int tabletsInPack; // Number of tablets per pack (if form == Tablets)
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -42,6 +45,9 @@ class ProductModel {
     required this.isFeatured,
     required this.isRecommended,
     required this.isActive,
+    this.isPrescribed = false,
+    this.medicineForm = '',
+    this.tabletsInPack = 0,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -66,6 +72,9 @@ class ProductModel {
     isFeatured: false,
     isRecommended: false,
     isActive: true,
+    isPrescribed: false,
+    medicineForm: '',
+    tabletsInPack: 0,
     createdAt: DateTime.now(),
     updatedAt: DateTime.now(),
   );
@@ -90,6 +99,9 @@ class ProductModel {
       'IsFeatured': isFeatured,
       'IsRecommended': isRecommended,
       'IsActive': isActive,
+      'IsPrescribed': isPrescribed,
+      'MedicineForm': medicineForm,
+      'TabletsInPack': tabletsInPack,
       'CreatedAt': createdAt,
       'UpdatedAt': updatedAt,
     };
@@ -119,6 +131,9 @@ class ProductModel {
       isFeatured: data['IsFeatured'] ?? false,
       isRecommended: data['IsRecommended'] ?? false,
       isActive: data['IsActive'] ?? true,
+      isPrescribed: data['IsPrescribed'] ?? false,
+      medicineForm: data['MedicineForm'] ?? '',
+      tabletsInPack: (data['TabletsInPack'] ?? 0) is int ? (data['TabletsInPack'] ?? 0) : int.tryParse(data['TabletsInPack'].toString()) ?? 0,
       createdAt: (data['CreatedAt'] as Timestamp).toDate(),
       updatedAt: (data['UpdatedAt'] as Timestamp).toDate(),
     );
@@ -144,6 +159,9 @@ class ProductModel {
     bool? isFeatured,
     bool? isRecommended,
     bool? isActive,
+    bool? isPrescribed,
+    String? medicineForm,
+    int? tabletsInPack,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -166,6 +184,9 @@ class ProductModel {
       isFeatured: isFeatured ?? this.isFeatured,
       isRecommended: isRecommended ?? this.isRecommended,
       isActive: isActive ?? this.isActive,
+      isPrescribed: isPrescribed ?? this.isPrescribed,
+      medicineForm: medicineForm ?? this.medicineForm,
+      tabletsInPack: tabletsInPack ?? this.tabletsInPack,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

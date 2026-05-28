@@ -109,6 +109,9 @@ class MProductDetail extends StatelessWidget {
                     ),
                   ),
 
+                  /// Medicine Details (only if any field is set)
+                  _MedicineDetailsSection(productData: data),
+
                   /// Reviews Section link
                   const Divider(),
                   const SizedBox(height: MSizes.spaceBtwItems),
@@ -136,6 +139,128 @@ class MProductDetail extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Shown after description — only renders if at least one medicine field is set.
+class _MedicineDetailsSection extends StatelessWidget {
+  const _MedicineDetailsSection({required this.productData});
+
+  final Map<String, dynamic> productData;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isPrescribed = productData['isPrescribed'] ?? false;
+    final String form = (productData['medicineForm'] ?? '').toString();
+    final int tabletsInPack =
+        ((productData['tabletsInPack'] ?? 0) as num).toInt();
+
+    if (!isPrescribed && form.isEmpty && tabletsInPack <= 0) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: MSizes.spaceBtwSections),
+        const MSectionHeading(
+          title: 'Medicine Details',
+          showActionButton: false,
+        ),
+        const SizedBox(height: MSizes.spaceBtwItems),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.blue.shade50,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.blue.shade100),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Prescribed
+              if (isPrescribed)
+                _DetailRow(
+                  icon: Icons.medical_services_outlined,
+                  iconColor: Colors.blue.shade700,
+                  label: 'Prescribed',
+                  value: 'Yes — Prescription Required',
+                  valueColor: Colors.blue.shade800,
+                  bold: true,
+                ),
+
+              // Form
+              if (form.isNotEmpty) ...[
+                if (isPrescribed) const SizedBox(height: 10),
+                _DetailRow(
+                  icon: Icons.science_outlined,
+                  iconColor: Colors.teal.shade600,
+                  label: 'Form',
+                  value: form,
+                ),
+              ],
+
+              // Tablets/Capsules in pack
+              if (tabletsInPack > 0) ...[
+                if (isPrescribed || form.isNotEmpty)
+                  const SizedBox(height: 10),
+                _DetailRow(
+                  icon: Icons.inventory_2_outlined,
+                  iconColor: Colors.indigo.shade600,
+                  label: form.isNotEmpty ? '$form per Pack' : 'Units per Pack',
+                  value: tabletsInPack.toString(),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DetailRow extends StatelessWidget {
+  const _DetailRow({
+    required this.icon,
+    required this.iconColor,
+    required this.label,
+    required this.value,
+    this.valueColor,
+    this.bold = false,
+  });
+
+  final IconData icon;
+  final Color iconColor;
+  final String label;
+  final String value;
+  final Color? valueColor;
+  final bool bold;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 18, color: iconColor),
+        const SizedBox(width: 8),
+        Text(
+          '$label:  ',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Colors.grey.shade700,
+              ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: valueColor ?? Colors.black87,
+                  fontWeight: bold ? FontWeight.bold : FontWeight.w500,
+                ),
+          ),
+        ),
+      ],
     );
   }
 }

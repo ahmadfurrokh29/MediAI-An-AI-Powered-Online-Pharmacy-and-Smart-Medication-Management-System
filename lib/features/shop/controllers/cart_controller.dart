@@ -11,6 +11,8 @@ class CartItemModel {
   final double price;
   final double salePrice;
   final int stock;
+  final bool isPrescribed;
+  final int tabletsInPack;
   final RxInt quantity;
 
   CartItemModel({
@@ -21,6 +23,8 @@ class CartItemModel {
     required this.price,
     required this.salePrice,
     required this.stock,
+    this.isPrescribed = false,
+    this.tabletsInPack = 0,
     int quantity = 1,
   }) : quantity = quantity.obs;
 
@@ -40,6 +44,8 @@ class CartItemModel {
       price: (m['price'] ?? 0).toDouble(),
       salePrice: (m['salePrice'] ?? 0).toDouble(),
       stock: (m['stock'] ?? 0) is int ? m['stock'] as int : (m['stock'] ?? 0).toInt(),
+      isPrescribed: m['isPrescribed'] ?? false,
+      tabletsInPack: (m['tabletsInPack'] as num? ?? 0).toInt(),
       quantity: (m['quantity'] ?? 1) is int ? m['quantity'] as int : (m['quantity'] ?? 1).toInt(),
     );
   }
@@ -51,6 +57,8 @@ class CartItemModel {
     'price': price,
     'salePrice': salePrice,
     'stock': stock,
+    'isPrescribed': isPrescribed,
+    'tabletsInPack': tabletsInPack,
     'quantity': quantity.value,
     'updatedAt': FieldValue.serverTimestamp(),
   };
@@ -78,6 +86,9 @@ class CartController extends GetxController {
   double get taxFee => subtotal * 0.05; // 5 % tax
 
   double get totalAmount => subtotal + shippingFee + taxFee;
+
+  /// True when at least one cart item requires a prescription.
+  bool get hasPrescribedItems => cartItems.any((e) => e.isPrescribed);
 
   // ── Lifecycle ────────────────────────────────────────────────────────────
 
@@ -112,7 +123,8 @@ class CartController extends GetxController {
 
   /// Adds [quantity] units of the product to the cart.
   /// If already in cart, increments instead.
-  Future<void> addToCart(Map<String, dynamic> product, {int quantity = 1}) async {
+  /// Set [showSnackbar] to false to suppress the default snackbar.
+  Future<void> addToCart(Map<String, dynamic> product, {int quantity = 1, bool showSnackbar = true}) async {
     final id = (product['id'] ?? '').toString();
     if (id.isEmpty) return;
 
@@ -126,18 +138,20 @@ class CartController extends GetxController {
         name: (product['name'] ?? '').toString(),
         brandName: (product['brandName'] ?? '').toString(),
         image: _firstImage(product),
-        price: (product['price'] ?? 0).toDouble(),
-        salePrice: (product['salePrice'] ?? 0).toDouble(),
-        stock: (product['stock'] ?? 0) is int
-            ? product['stock'] as int
-            : (product['stock'] ?? 0).toInt(),
+        price: (product['price'] as num? ?? 0).toDouble(),
+        salePrice: (product['salePrice'] as num? ?? 0).toDouble(),
+        stock: (product['stock'] as num? ?? 0).toInt(),
+        isPrescribed: product['isPrescribed'] as bool? ?? false,
+        tabletsInPack: (product['tabletsInPack'] as num? ?? 0).toInt(),
         quantity: quantity,
       );
       cartItems.add(item);
       _persistItem(item);
     }
     cartItems.refresh();
-    Get.snackbar('Cart', 'Item added to cart', snackPosition: SnackPosition.BOTTOM);
+    if (showSnackbar) {
+      Get.snackbar('Cart', 'Item added to cart', snackPosition: SnackPosition.BOTTOM);
+    }
   }
 
   // ── Update quantity ──────────────────────────────────────────────────────
@@ -200,11 +214,11 @@ class CartController extends GetxController {
       name: (product['name'] ?? '').toString(),
       brandName: (product['brandName'] ?? '').toString(),
       image: _firstImage(product),
-      price: (product['price'] ?? 0).toDouble(),
-      salePrice: (product['salePrice'] ?? 0).toDouble(),
-      stock: (product['stock'] ?? 0) is int
-          ? product['stock'] as int
-          : (product['stock'] ?? 0).toInt(),
+      price: (product['price'] as num? ?? 0).toDouble(),
+      salePrice: (product['salePrice'] as num? ?? 0).toDouble(),
+      stock: (product['stock'] as num? ?? 0).toInt(),
+      isPrescribed: product['isPrescribed'] as bool? ?? false,
+      tabletsInPack: (product['tabletsInPack'] as num? ?? 0).toInt(),
       quantity: quantity,
     );
     cartItems.add(item);

@@ -48,6 +48,13 @@ import '../features/coupons/pages/update_coupon_page.dart'
 import '../features/admins/pages/admins_page.dart' show AdminsPage;
 import '../features/admins/pages/create_admin_page.dart' show CreateAdminPage;
 import '../features/admins/pages/update_admin_page.dart' show UpdateAdminPage;
+import '../features/prescription_requests/pages/prescription_requests_page.dart'
+    show PrescriptionRequestsPage;
+import '../features/prescription_requests/pages/prescription_request_detail_page.dart'
+    show PrescriptionRequestDetailPage;
+import '../features/prescription_requests/models/prescription_request_model.dart';
+import '../features/prescription_requests/controllers/prescription_request_controller.dart'
+    show PrescriptionRequestController;
 import 'sidebar.dart';
 import 'topbar.dart';
 import 'settings_page.dart';
@@ -90,6 +97,8 @@ class _AdminLayoutState extends State<AdminLayout> {
   bool isUpdatingAdmin = false;
   Map<String, dynamic>? selectedAdmin;
   bool _cameFromSettings = false;
+  PrescriptionRequestModel? selectedPrescriptionRequest;
+  bool isViewingPrescriptionRequest = false;
 
   @override
   void initState() {
@@ -130,6 +139,10 @@ class _AdminLayoutState extends State<AdminLayout> {
         return "Admins";
       case 11:
         return "Settings";
+      case 13:
+        return isViewingPrescriptionRequest
+            ? "Prescription Request Details"
+            : "Prescription Requests";
       default:
         return "Dashboard";
     }
@@ -473,6 +486,29 @@ class _AdminLayoutState extends State<AdminLayout> {
       // 12 - Campaigns
       case 12:
         return const CampaignsPage();
+
+      // 13 - Prescription Requests
+      case 13:
+        if (isViewingPrescriptionRequest &&
+            selectedPrescriptionRequest != null) {
+          return PrescriptionRequestDetailPage(
+            request: selectedPrescriptionRequest!,
+            onBack: () {
+              setState(() {
+                isViewingPrescriptionRequest = false;
+                selectedPrescriptionRequest = null;
+              });
+            },
+          );
+        }
+        return PrescriptionRequestsPage(
+          onView: (PrescriptionRequestModel req) {
+            setState(() {
+              selectedPrescriptionRequest = req;
+              isViewingPrescriptionRequest = true;
+            });
+          },
+        );
 
       // 11 - Settings
       case 11:

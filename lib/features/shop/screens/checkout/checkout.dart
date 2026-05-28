@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:med/common/widgets/appbar/appbar.dart';
@@ -14,16 +16,31 @@ import 'package:med/utils/constants/colors.dart';
 import 'package:med/utils/constants/sizes.dart';
 import 'package:med/utils/helpers/helper_functions.dart';
 
-class CheckoutScreen extends StatelessWidget {
+class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
+
+  @override
+  State<CheckoutScreen> createState() => _CheckoutScreenState();
+}
+
+class _CheckoutScreenState extends State<CheckoutScreen> {
+  late final OrderController _orderCtrl;
+  late final CouponController _couponCtrl;
+  late final CartController _cart;
+
+  @override
+  void initState() {
+    super.initState();
+    _orderCtrl = Get.put(OrderController());
+    _couponCtrl = Get.put(CouponController());
+    _cart = CartController.instance;
+    // Auto-attach any previously scanned prescriptions from local history.
+    _orderCtrl.autoAttachPrescriptionsFromLocalDB();
+  }
 
   @override
   Widget build(BuildContext context) {
     final dark = MHelperFunctions.isDarkMode(context);
-    Get.put(OrderController());
-    Get.put(CouponController());
-    final cart = CartController.instance;
-    final couponCtrl = CouponController.instance;
 
     return Scaffold(
       appBar: MAppBar(
@@ -41,6 +58,17 @@ class CheckoutScreen extends StatelessWidget {
               /// Items in Cart (read-only)
               MCartitem(showAddRemoveButton: false),
               const SizedBox(height: MSizes.spaceBtwSections),
+
+              /// Prescription Upload Section (only for prescribed medicines)
+              Obx(() {
+                if (!_cart.hasPrescribedItems) return const SizedBox.shrink();
+                return Column(
+                  children: [
+                    _PrescriptionUploadSection(orderCtrl: _orderCtrl, dark: dark),
+                    const SizedBox(height: MSizes.spaceBtwSections),
+                  ],
+                );
+              }),
 
               /// Coupon Code Section
               const MCouponCode(),
@@ -70,16 +98,20 @@ class CheckoutScreen extends StatelessWidget {
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.all(MSizes.defaultSpace),
         child: Obx(() {
-          final orderCtrl = OrderController.instance;
-          final isPlacing = orderCtrl.isLoading.value;
-          final isEmpty = cart.cartItems.isEmpty;
-          final discount = couponCtrl.discountAmount.value;
+          final isPlacing = _orderCtrl.isLoading.value;
+          final isEmpty = _cart.cartItems.isEmpty;
+          final prescriptionMissing =
+              _cart.hasPrescribedItems && _orderCtrl.prescriptions.isEmpty;
+          final discount = _couponCtrl.discountAmount.value;
           final total =
-              cart.subtotal + cart.shippingFee + cart.taxFee - discount;
+              _cart.subtotal + _cart.shippingFee + _cart.taxFee - discount;
           return ElevatedButton(
             onPressed: isPlacing || isEmpty
                 ? null
-                : () => orderCtrl.placeOrder(),
+                : () => _orderCtrl.placeOrder(),
+            style: prescriptionMissing
+                ? ElevatedButton.styleFrom(backgroundColor: Colors.grey)
+                : null,
             child: isPlacing
                 ? const SizedBox(
                     height: 18,
@@ -98,3 +130,146 @@ class CheckoutScreen extends StatelessWidget {
     );
   }
 }
+
+// ── Prescription Upload Widget ────────────────────────────────────────────────
+
+class _PrescriptionUploadSection extends StatelessWidget {
+  const _PrescriptionUploadSection({
+    required this.orderCtrl,
+    required this.dark,
+  });
+
+  final OrderController orderCtrl;
+  final bool dark;
+
+  @override
+  Widget build(BuildContext context) {
+    return MRoundedContainer(
+      padding: const EdgeInsets.all(MSizes.md),
+      showBorder: true,
+      borderColor: Colors.orange,
+      backgroundColor: dark ? MColors.black : MColors.white,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            children: [
+              const Icon(Icons.medical_services_outlined,
+                  color: Colors.orange, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Prescription Required',
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleMedium
+                      ?.copyWith(fontWeight: FontWeight.bold),
+                ),
+              ),
+              Obx(() => orderCtrl.prescriptions.isNotEmpty
+                  ? const Icon(Icons.check_circle, color: Colors.green, size: 20)
+                  : const Icon(Icons.warning_amber_rounded,
+                      color: Colors.orange, size: 20)),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'One or more items in your cart require a valid prescription.',
+            style: Theme.of(context)
+                .textTheme
+                .bodySmall
+                ?.copyWith(color: Colors.orange.shade700),
+          ),
+          const SizedBox(height: MSizes.spaceBtwItems),
+
+          // Auto-attached label
+          Obx(() {
+            if (orderCtrl.prescriptions.isEmpty) return const SizedBox.shrink();
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: [
+                  const Icon(Icons.history_edu_outlined,
+                      size: 14, color: Colors.green),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      'Prescription auto-attached from your scan history. '
+                      'You can remove and re-upload if needed.',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: Colors.green.shade700,
+                          ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+
+          // Uploaded thumbnails
+          Obx(() {
+            if (orderCtrl.prescriptions.isEmpty) return const SizedBox.shrink();
+            return Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: List.generate(orderCtrl.prescriptions.length, (i) {
+                final Uint8List bytes =
+                    base64Decode(orderCtrl.prescriptions[i]);
+                return Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.memory(
+                        bytes,
+                        width: 72,
+                        height: 72,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    Positioned(
+                      top: 2,
+                      right: 2,
+                      child: GestureDetector(
+                        onTap: () => orderCtrl.removePrescription(i),
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                          ),
+                          padding: const EdgeInsets.all(2),
+                          child: const Icon(Icons.close,
+                              color: Colors.white, size: 12),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              }),
+            );
+          }),
+          const SizedBox(height: MSizes.spaceBtwItems),
+
+          // Upload / add more button
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: orderCtrl.pickPrescription,
+              icon: const Icon(Icons.upload_file_outlined),
+              label: Obx(() => Text(
+                    orderCtrl.prescriptions.isEmpty
+                        ? 'Upload Prescription'
+                        : 'Add Another Prescription',
+                  )),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.orange,
+                side: const BorderSide(color: Colors.orange),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+

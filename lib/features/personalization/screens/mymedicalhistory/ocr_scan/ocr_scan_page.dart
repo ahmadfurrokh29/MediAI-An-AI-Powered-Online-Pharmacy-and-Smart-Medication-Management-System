@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -46,11 +47,22 @@ class _OCRScanPageState extends State<OCRScanPage> {
       if (!mounted) return;
 
       if (medicines.isNotEmpty) {
+        // Encode the scanned prescription image once and pass it to the form
+        // so it can be saved alongside each medicine in LocalDB.
+        String? prescriptionBase64;
+        try {
+          final bytes = await _image!.readAsBytes();
+          prescriptionBase64 = base64Encode(bytes);
+        } catch (_) {}
+
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) =>
-                MedicineFormPage(medicines: medicines, index: 0),
+            builder: (context) => MedicineFormPage(
+              medicines: medicines,
+              index: 0,
+              prescriptionImageBase64: prescriptionBase64,
+            ),
           ),
         );
       } else {

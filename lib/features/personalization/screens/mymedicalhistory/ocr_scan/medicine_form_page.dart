@@ -12,11 +12,15 @@ class MedicineFormPage extends StatefulWidget {
   final List<Map<String, dynamic>> medicines;
   final int index;
   final bool isManualMultiAdd;
+  /// Base64-encoded prescription image from the OCR scan (may be null for
+  /// manually-added medicines or when the scan image was unavailable).
+  final String? prescriptionImageBase64;
   const MedicineFormPage({
     super.key,
     required this.medicines,
     required this.index,
     this.isManualMultiAdd = false,
+    this.prescriptionImageBase64,
   });
   @override
   State<MedicineFormPage> createState() => _MedicineFormPageState();
@@ -863,6 +867,15 @@ class _MedicineFormPageState extends State<MedicineFormPage> {
       // insertMedicine uses ConflictAlgorithm.replace so it will update if medId exists
       await LocalDB.insertMedicine(uid, medicineData);
 
+      // Save prescription image separately (uses its own table — no migration needed).
+      if (widget.prescriptionImageBase64 != null) {
+        await LocalDB.savePrescriptionImage(
+          uid,
+          medName,
+          widget.prescriptionImageBase64!,
+        );
+      }
+
       await OfflineQueueService.queueOperation(
         type: isEditing ? 'UPDATE' : 'INSERT',
         entity: 'MEDICINE',
@@ -927,6 +940,7 @@ class _MedicineFormPageState extends State<MedicineFormPage> {
             builder: (_) => MedicineFormPage(
               medicines: widget.medicines,
               index: currentIndex + 1,
+              prescriptionImageBase64: widget.prescriptionImageBase64,
             ),
           ),
         );
