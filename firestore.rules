@@ -62,6 +62,16 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // ── Transactions (payment records) ──
+    // Created and updated by authenticated users (via PaymentService).
+    // Admin can read all transactions for reconciliation.
+    match /Transactions/{txId} {
+      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuth() && resource.data.userId == request.auth.uid;
+      allow read:   if isAuth() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow delete: if isAdmin();
+    }
+
     // ── Coupons (authenticated read, admin write) ──
     match /Coupons/{couponId} {
       allow read: if isAuth();
@@ -131,6 +141,11 @@ service cloud.firestore {
 
       // ── Notifications subcollection ──
       match /Notifications/{notifId} {
+        allow read, write: if isAuth() && (request.auth.uid == userId || isAdmin());
+      }
+
+      // ── PaymentMethods subcollection ──
+      match /PaymentMethods/{methodId} {
         allow read, write: if isAuth() && (request.auth.uid == userId || isAdmin());
       }
 

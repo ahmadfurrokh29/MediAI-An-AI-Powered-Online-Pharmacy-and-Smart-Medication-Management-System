@@ -6,6 +6,7 @@ class OrderItemModel {
   final double price;
   final int quantity;
   final bool isPrescribed;
+
   /// Number of tablets/units per pack. 0 means not applicable (e.g. syrups).
   final int tabletsInPack;
 
@@ -44,6 +45,8 @@ class OrderModel {
   final String customerEmail;
   final String orderStatus;
   final String paymentStatus;
+  final String paymentMethod; // e.g. "Cash on Delivery", "Card Payment"
+  final String transactionId; // empty for COD orders
   final double totalAmount;
   final double subtotal;
   final String couponCode;
@@ -61,6 +64,8 @@ class OrderModel {
     required this.customerEmail,
     required this.orderStatus,
     required this.paymentStatus,
+    this.paymentMethod = 'Cash on Delivery',
+    this.transactionId = '',
     required this.totalAmount,
     required this.subtotal,
     required this.couponCode,
@@ -79,6 +84,8 @@ class OrderModel {
     customerEmail: '',
     orderStatus: '',
     paymentStatus: '',
+    paymentMethod: 'Cash on Delivery',
+    transactionId: '',
     totalAmount: 0,
     subtotal: 0,
     couponCode: '',
@@ -99,6 +106,8 @@ class OrderModel {
       customerEmail: data['customerEmail'] as String? ?? '',
       orderStatus: data['orderStatus'] as String? ?? 'Pending',
       paymentStatus: data['paymentStatus'] as String? ?? 'Pending',
+      paymentMethod: data['paymentMethod'] as String? ?? 'Cash on Delivery',
+      transactionId: data['transactionId'] as String? ?? '',
       totalAmount: (data['totalAmount'] as num? ?? 0).toDouble(),
       subtotal: (data['subtotal'] as num? ?? 0).toDouble(),
       couponCode: data['couponCode'] as String? ?? '',
@@ -146,6 +155,8 @@ class OrderModel {
     'items': items.map((e) => e.toMap()).toList(),
     'orderStatus': orderStatus,
     'paymentStatus': paymentStatus,
+    'paymentMethod': paymentMethod,
+    'transactionId': transactionId,
     'totalAmount': totalAmount,
     'subtotal': subtotal,
     'couponCode': couponCode,

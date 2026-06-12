@@ -167,68 +167,80 @@ class _WalletCouponChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final couponCtrl = CouponController.instance;
     final cart = CartController.instance;
-    final isSelected =
-        couponCtrl.appliedCoupon.value?.code == userCoupon.couponCode;
 
-    return GestureDetector(
-      onTap: () {
-        if (isSelected) {
-          couponCtrl.removeCoupon();
-        } else {
-          couponCtrl.applyCouponFromWallet(
-            userCoupon: userCoupon,
-            subtotal: cart.subtotal,
-            shippingFee: cart.shippingFee,
-            taxFee: cart.taxFee,
-          );
-        }
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.green.shade50 : Colors.grey.shade50,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? Colors.green : Colors.grey.shade300,
-            width: isSelected ? 2 : 1,
+    // Wrap in Obx so the chip re-renders when:
+    //  (a) the applied coupon changes (selected state)
+    //  (b) _liveDiscounts is populated after async fetch
+    return Obx(() {
+      final isSelected =
+          couponCtrl.appliedCoupon.value?.code.toUpperCase() ==
+          userCoupon.couponCode.toUpperCase();
+
+      // Use live discount fetched from Coupons collection; fall back to stored value.
+      final discountLabel = couponCtrl.liveDiscountLabelFor(userCoupon);
+
+      return GestureDetector(
+        onTap: () {
+          if (isSelected) {
+            couponCtrl.removeCoupon();
+          } else {
+            couponCtrl.applyCouponFromWallet(
+              userCoupon: userCoupon,
+              subtotal: cart.subtotal,
+              shippingFee: cart.shippingFee,
+              taxFee: cart.taxFee,
+            );
+          }
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: isSelected ? Colors.green.shade50 : Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected ? Colors.green : Colors.grey.shade300,
+              width: isSelected ? 2 : 1,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.local_offer,
+                    size: 14,
+                    color: isSelected ? Colors.green : Colors.grey.shade600,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    userCoupon.couponCode,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                      color: isSelected ? Colors.green : Colors.black87,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                discountLabel,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: isSelected
+                      ? Colors.green.shade700
+                      : Colors.teal.shade600,
+                ),
+              ),
+            ],
           ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.local_offer,
-                  size: 14,
-                  color: isSelected ? Colors.green : Colors.grey.shade600,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  userCoupon.couponCode,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                    color: isSelected ? Colors.green : Colors.black87,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              userCoupon.discountType == 'PERCENTAGE'
-                  ? '${userCoupon.discountValue.toStringAsFixed(0)}% off'
-                  : 'Rs ${userCoupon.discountValue.toStringAsFixed(0)} off',
-              style: TextStyle(
-                fontSize: 11,
-                color: isSelected ? Colors.green.shade700 : Colors.grey,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+      );
+    });
   }
 }

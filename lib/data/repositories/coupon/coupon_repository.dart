@@ -138,4 +138,13 @@ class CouponRepository {
       'RedeemedAt': FieldValue.serverTimestamp(),
     });
   }
+
+  // ── Mark a UserCoupon doc as EXPIRED ──────────────────────────────────────
+
+  Future<void> expireUserCoupon(String userCouponId) async {
+    await _db.collection('UserCoupons').doc(userCouponId).update({
+      'Status': 'EXPIRED',
+      'ExpiredAt': FieldValue.serverTimestamp(),
+    });
+  }
 }

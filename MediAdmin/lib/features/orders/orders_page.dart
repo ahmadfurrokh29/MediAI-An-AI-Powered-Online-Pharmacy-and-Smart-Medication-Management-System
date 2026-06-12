@@ -92,6 +92,7 @@ class OrdersPage extends StatelessWidget {
                     DataColumn(label: Text('Items')),
                     DataColumn(label: Text('Order Status')),
                     DataColumn(label: Text('Payment')),
+                    DataColumn(label: Text('Method')),
                     DataColumn(label: Text('Amount')),
                     DataColumn(label: Text('Date')),
                     DataColumn(label: Text('Action')),
@@ -186,6 +187,7 @@ class OrdersPage extends StatelessWidget {
                             ),
                           ),
                         ),
+                        DataCell(_MethodBadge(method: order.paymentMethod)),
                         DataCell(
                           Text(
                             '\$${order.totalAmount.toStringAsFixed(2)}',
@@ -313,6 +315,62 @@ class OrdersPage extends StatelessWidget {
               foregroundColor: Colors.white,
             ),
             child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Payment method badge ────────────────────────────────────────────────────
+
+class _MethodBadge extends StatelessWidget {
+  const _MethodBadge({required this.method});
+  final String method;
+
+  @override
+  Widget build(BuildContext context) {
+    Color bg;
+    Color fg;
+    IconData icon;
+
+    final m = method.toLowerCase();
+    if (m.contains('easypaisa')) {
+      bg = const Color(0xFFE6F4EF);
+      fg = const Color(0xFF00875A);
+      icon = Icons.account_balance_wallet_outlined;
+    } else if (m.contains('jazzcash')) {
+      bg = const Color(0xFFFFEBEB);
+      fg = const Color(0xFFCC0000);
+      icon = Icons.account_balance_wallet;
+    } else if (m.contains('card')) {
+      bg = const Color(0xFFEBF0FF);
+      fg = const Color(0xFF2B4CB0);
+      icon = Icons.credit_card;
+    } else {
+      bg = const Color(0xFFF7FAFC);
+      fg = const Color(0xFF4A5568);
+      icon = Icons.money;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: fg),
+          const SizedBox(width: 4),
+          Text(
+            method.isEmpty ? 'COD' : method,
+            style: TextStyle(
+              fontSize: 11,
+              color: fg,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ],
       ),

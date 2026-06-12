@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 import '../models/campaign_model.dart';
 import '../models/coupon_model.dart';
 
-// ── Replace with your deployed FastAPI URL ────────────────────────────────────
+// FastAPI URL — only used for optional FCM push in sendCampaign.
 const String _kApiBase = 'http://127.0.0.1:8000';
 
 class CouponController extends GetxController {
@@ -56,15 +56,55 @@ class CouponController extends GetxController {
       coupons.value = snapshot.docs
           .map((doc) => CouponModel.fromSnapshot(doc))
           .toList();
+
+      // Silently deactivate any coupons whose EndDate has passed.
+      // Runs after the list is set so the admin sees the correct state
+      // immediately — no extra refresh needed.
+      await _autoExpireOldCoupons();
     } catch (e) {
-      coupons.value = [];
-      Get.snackbar(
-        'Info',
-        'No coupons found. Create a new coupon.',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      // Don't clear existing data — just inform the admin; list stays intact.
+      if (coupons.isEmpty) {
+        Get.snackbar(
+          'Info',
+          'No coupons found. Create a new coupon.',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  /// Batch-writes `IsActive: false` to every coupon whose `EndDate` is in the
+  /// past, then updates the in-memory list so the UI reflects it immediately.
+  Future<void> _autoExpireOldCoupons() async {
+    final now = DateTime.now();
+    final toExpire = coupons
+        .where((c) =>
+            c.isActive && c.endDate != null && now.isAfter(c.endDate!))
+        .toList();
+
+    if (toExpire.isEmpty) return;
+
+    try {
+      final batch = _db.batch();
+      for (final c in toExpire) {
+        batch.update(_db.collection('Coupons').doc(c.id), {
+          'IsActive': false,
+          'UpdatedAt': Timestamp.now(),
+        });
+      }
+      await batch.commit();
+
+      // Reflect the change in-memory so the UI updates without a re-fetch
+      final expiredIds = toExpire.map((c) => c.id).toSet();
+      for (int i = 0; i < coupons.length; i++) {
+        if (expiredIds.contains(coupons[i].id)) {
+          coupons[i] = coupons[i].copyWith(isActive: false);
+        }
+      }
+    } catch (_) {
+      // Non-critical — isEffectivelyActive getter covers the UI fallback
     }
   }
 
@@ -345,22 +385,44 @@ class CouponController extends GetxController {
   }
 
   // ── Analytics ─────────────────────────────────────────────────────────────
+  // Computed directly from Firestore — no FastAPI dependency.
 
   Future<void> fetchAnalytics() async {
     try {
-      final response = await http.get(
-        Uri.parse('$_kApiBase/admin/coupon/analytics'),
-      );
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
-        totalRedemptions.value = data['total_redemptions'] ?? 0;
-        totalDiscountGiven.value = (data['total_discount_given'] ?? 0.0)
-            .toDouble();
-        acceptanceRate.value = (data['acceptance_rate'] ?? 0.0).toDouble();
-        declineRate.value = (data['decline_rate'] ?? 0.0).toDouble();
+      // ── Redemptions: count + sum of DiscountAmount ─────────────────────
+      final redemptionsAgg = await _db
+          .collection('CouponRedemptions')
+          .aggregate(count(), sum('DiscountAmount'))
+          .get();
+      totalRedemptions.value = redemptionsAgg.count ?? 0;
+      totalDiscountGiven.value = (redemptionsAgg.getSum('DiscountAmount') ?? 0)
+          .toDouble();
+
+      // ── Acceptance rate: ACCEPTED+REDEEMED / all responded ────────────
+      final respondedAgg = await _db
+          .collection('UserCoupons')
+          .where('Status', whereIn: ['ACCEPTED', 'DECLINED', 'REDEEMED'])
+          .aggregate(count())
+          .get();
+      final acceptedAgg = await _db
+          .collection('UserCoupons')
+          .where('Status', whereIn: ['ACCEPTED', 'REDEEMED'])
+          .aggregate(count())
+          .get();
+
+      final responded = respondedAgg.count ?? 0;
+      final accepted = acceptedAgg.count ?? 0;
+      final declined = responded - accepted;
+
+      if (responded > 0) {
+        acceptanceRate.value = (accepted / responded) * 100.0;
+        declineRate.value = (declined / responded) * 100.0;
+      } else {
+        acceptanceRate.value = 0.0;
+        declineRate.value = 0.0;
       }
     } catch (_) {
-      // Non-critical — analytics may not be available offline
+      // Non-critical — analytics silently unavailable (e.g. no internet)
     }
   }
 

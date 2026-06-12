@@ -24,7 +24,7 @@ class _CreateCouponPageState extends State<CreateCouponPage> {
   final startDateController = TextEditingController();
   final endDateController = TextEditingController();
 
-  String? selectedType;
+  String? selectedType = 'FLAT';
   String selectedTargetType = 'ALL';
   bool isActive = true;
 

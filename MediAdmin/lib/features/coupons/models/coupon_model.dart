@@ -39,6 +39,17 @@ class CouponModel {
     this.updatedAt,
   });
 
+  /// True only when [isActive] is set AND the current date is within
+  /// [startDate]–[endDate] (or no dates are set).
+  /// Used as a display safety-net before the async Firestore patch completes.
+  bool get isEffectivelyActive {
+    if (!isActive) return false;
+    final now = DateTime.now();
+    if (endDate != null && now.isAfter(endDate!)) return false;
+    if (startDate != null && now.isBefore(startDate!)) return false;
+    return true;
+  }
+
   CouponModel copyWith({
     String? id,
     String? code,

@@ -1,5 +1,4 @@
 ﻿import 'dart:convert';
-import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -39,8 +38,7 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
 
   /// Always use live order from controller list.
   OrderModel get _order {
-    final found =
-        _ctrl.orders.firstWhereOrNull((o) => o.id == widget.order.id);
+    final found = _ctrl.orders.firstWhereOrNull((o) => o.id == widget.order.id);
     return found ?? widget.order;
   }
 
@@ -49,7 +47,8 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
     super.initState();
     _ctrl = OrderController.instance;
     selectedStatus = widget.order.orderStatus;
-    selectedPaymentStatus = const ['Unpaid', 'Paid'].contains(widget.order.paymentStatus)
+    selectedPaymentStatus =
+        const ['Unpaid', 'Paid'].contains(widget.order.paymentStatus)
         ? widget.order.paymentStatus
         : 'Unpaid';
   }
@@ -82,8 +81,7 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
       final bytes = base64Decode(b64);
       return Image.memory(bytes, width: width, fit: BoxFit.contain);
     } catch (_) {
-      return const Text('Invalid image',
-          style: TextStyle(color: Colors.grey));
+      return const Text('Invalid image', style: TextStyle(color: Colors.grey));
     }
   }
 
@@ -91,39 +89,41 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
     showDialog(
       context: context,
       builder: (ctx) => Dialog(
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: ConstrainedBox(
-          constraints:
-              const BoxConstraints(maxWidth: 680, maxHeight: 560),
+          constraints: const BoxConstraints(maxWidth: 680, maxHeight: 560),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 20, vertical: 16),
+                  horizontal: 20,
+                  vertical: 16,
+                ),
                 decoration: const BoxDecoration(
                   color: Color(0xFF6C63FF),
-                  borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(12)),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.medical_services_outlined,
-                        color: Colors.white, size: 20),
+                    const Icon(
+                      Icons.medical_services_outlined,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                     const SizedBox(width: 8),
                     const Expanded(
                       child: Text(
                         'Prescription(s)',
                         style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16),
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                       ),
                     ),
                     IconButton(
-                      icon:
-                          const Icon(Icons.close, color: Colors.white),
+                      icon: const Icon(Icons.close, color: Colors.white),
                       onPressed: () => Navigator.pop(ctx),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
@@ -137,17 +137,16 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                   child: Wrap(
                     spacing: 16,
                     runSpacing: 16,
-                    children: _order.prescriptions
-                        .asMap()
-                        .entries
-                        .map((e) {
+                    children: _order.prescriptions.asMap().entries.map((e) {
                       return Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
                             'Prescription ${e.key + 1}',
                             style: const TextStyle(
-                                fontSize: 12, color: Colors.grey),
+                              fontSize: 12,
+                              color: Colors.grey,
+                            ),
                           ),
                           const SizedBox(height: 4),
                           ClipRRect(
@@ -204,29 +203,28 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
 
               List<Map<String, dynamic>> found = snap.docs
                   .where((d) {
-                    final n = (d.data()
-                                    as Map<String, dynamic>)['Name'] ??
-                            (d.data() as Map<String, dynamic>)['name'] ??
-                            '';
-                    return n
-                        .toString()
-                        .toLowerCase()
-                        .contains(q.trim().toLowerCase());
+                    final n =
+                        (d.data() as Map<String, dynamic>)['Name'] ??
+                        (d.data() as Map<String, dynamic>)['name'] ??
+                        '';
+                    return n.toString().toLowerCase().contains(
+                      q.trim().toLowerCase(),
+                    );
                   })
                   .map((d) {
                     final data = d.data() as Map<String, dynamic>;
-                    final regularPrice =
-                        (data['Price'] ?? data['price'] ?? 0).toDouble();
+                    final regularPrice = (data['Price'] ?? data['price'] ?? 0)
+                        .toDouble();
                     final salePrice =
-                        (data['SalePrice'] ?? data['salePrice'] ?? 0).toDouble();
+                        (data['SalePrice'] ?? data['salePrice'] ?? 0)
+                            .toDouble();
                     final effectivePrice =
                         (salePrice > 0 && salePrice < regularPrice)
-                            ? salePrice
-                            : regularPrice;
+                        ? salePrice
+                        : regularPrice;
                     return {
                       'id': d.id,
-                      'name':
-                          (data['Name'] ?? data['name'] ?? '').toString(),
+                      'name': (data['Name'] ?? data['name'] ?? '').toString(),
                       'price': effectivePrice,
                       'isPrescribed':
                           data['IsPrescribed'] ?? data['isPrescribed'] ?? false,
@@ -245,10 +243,10 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
 
           return Dialog(
             shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12)),
+              borderRadius: BorderRadius.circular(12),
+            ),
             child: ConstrainedBox(
-              constraints:
-                  const BoxConstraints(maxWidth: 480, maxHeight: 520),
+              constraints: const BoxConstraints(maxWidth: 480, maxHeight: 520),
               child: Padding(
                 padding: const EdgeInsets.all(20),
                 child: Column(
@@ -259,7 +257,9 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                         const Text(
                           'Add Item to Order',
                           style: TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 16),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                         ),
                         const Spacer(),
                         IconButton(
@@ -292,8 +292,11 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                     Expanded(
                       child: results.isEmpty && !searching
                           ? const Center(
-                              child: Text('Type to search products',
-                                  style: TextStyle(color: Colors.grey)))
+                              child: Text(
+                                'Type to search products',
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            )
                           : ListView.builder(
                               itemCount: results.length,
                               itemBuilder: (_, i) {
@@ -303,8 +306,9 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                                 return ListTile(
                                   dense: true,
                                   selected: isSelected,
-                                  selectedTileColor: const Color(0xFF6C63FF)
-                                      .withOpacity(0.08),
+                                  selectedTileColor: const Color(
+                                    0xFF6C63FF,
+                                  ).withOpacity(0.08),
                                   title: Text(p['name'] as String),
                                   subtitle: Text(
                                     'Rs ${(p['price'] as double).toStringAsFixed(0)}'
@@ -312,11 +316,12 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                                     style: const TextStyle(fontSize: 12),
                                   ),
                                   trailing: isSelected
-                                      ? const Icon(Icons.check_circle,
-                                          color: Color(0xFF6C63FF))
+                                      ? const Icon(
+                                          Icons.check_circle,
+                                          color: Color(0xFF6C63FF),
+                                        )
                                       : null,
-                                  onTap: () =>
-                                      setS(() => selectedProduct = p),
+                                  onTap: () => setS(() => selectedProduct = p),
                                 );
                               },
                             ),
@@ -329,7 +334,8 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                             child: Text(
                               selectedProduct!['name'] as String,
                               style: const TextStyle(
-                                  fontWeight: FontWeight.w500),
+                                fontWeight: FontWeight.w500,
+                              ),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
@@ -342,11 +348,13 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                                 : null,
                           ),
                           Padding(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 8),
-                            child: Text('$addQty',
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.bold)),
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: Text(
+                              '$addQty',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                           _qtyBtn(
                             icon: Icons.add,
@@ -375,8 +383,7 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                                     price: p['price'] as double,
                                     quantity: addQty,
                                     isPrescribed:
-                                        p['isPrescribed'] as bool? ??
-                                            false,
+                                        p['isPrescribed'] as bool? ?? false,
                                   );
                                   _ctrl.addOrderItem(_order.id, item);
                                   Navigator.pop(ctx2);
@@ -399,8 +406,7 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final sid =
-        _order.id.length > 5 ? _order.id.substring(0, 5) : _order.id;
+    final sid = _order.id.length > 5 ? _order.id.substring(0, 5) : _order.id;
 
     return Container(
       color: const Color(0xFFF5F7FA),
@@ -420,9 +426,10 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                     Text(
                       'Back',
                       style: TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFF4A5568),
-                          fontWeight: FontWeight.w500),
+                        fontSize: 14,
+                        color: Color(0xFF4A5568),
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ],
                 ),
@@ -431,7 +438,9 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
               Text(
                 'Order [#$sid] Details',
                 style: const TextStyle(
-                    fontSize: 22, fontWeight: FontWeight.bold),
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 24),
               Obx(() {
@@ -447,19 +456,30 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                           // Summary bar
                           _card(
                             child: Row(
-                              mainAxisAlignment:
-                                  MainAxisAlignment.spaceBetween,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                _IC('Order Date',
-                                    DateFormat('dd/MM/yyyy')
-                                        .format(order.createdAt)),
                                 _IC(
-                                    'Items',
-                                    '${order.itemCount} item${order.itemCount != 1 ? 's' : ''}'),
-                                _IC('Total',
-                                    'Rs ${order.totalAmount.toStringAsFixed(0)}'),
+                                  'Order Date',
+                                  DateFormat(
+                                    'dd/MM/yyyy',
+                                  ).format(order.createdAt),
+                                ),
+                                _IC(
+                                  'Items',
+                                  '${order.itemCount} item${order.itemCount != 1 ? 's' : ''}',
+                                ),
+                                _IC(
+                                  'Total',
+                                  'Rs ${order.totalAmount.toStringAsFixed(0)}',
+                                ),
                                 _IC('Status', order.orderStatus),
                                 _IC('Payment', order.paymentStatus),
+                                _IC(
+                                  'Method',
+                                  order.paymentMethod.isEmpty
+                                      ? 'Cash on Delivery'
+                                      : order.paymentMethod,
+                                ),
                               ],
                             ),
                           ),
@@ -476,8 +496,9 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                                     const Text(
                                       'Order Items',
                                       style: TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 15),
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 15,
+                                      ),
                                     ),
                                     const Spacer(),
                                     if (_hasPrescriptions) ...[
@@ -501,42 +522,56 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
 
                                 // Column headers
                                 const Padding(
-                                  padding:
-                                      EdgeInsets.symmetric(vertical: 4),
+                                  padding: EdgeInsets.symmetric(vertical: 4),
                                   child: Row(
                                     children: [
                                       Expanded(
                                         flex: 4,
-                                        child: Text('Product',
-                                            style: TextStyle(
-                                                color: Colors.grey,
-                                                fontSize: 12)),
+                                        child: Text(
+                                          'Product',
+                                          style: TextStyle(
+                                            color: Colors.grey,
+                                            fontSize: 12,
+                                          ),
+                                        ),
                                       ),
                                       SizedBox(
                                         width: 80,
-                                        child: Text('Prescribed',
-                                            style: TextStyle(
-                                                color: Colors.grey,
-                                                fontSize: 12)),
+                                        child: Text(
+                                          'Prescribed',
+                                          style: TextStyle(
+                                            color: Colors.grey,
+                                            fontSize: 12,
+                                          ),
+                                        ),
                                       ),
                                       Expanded(
-                                        child: Text('Price',
-                                            style: TextStyle(
-                                                color: Colors.grey,
-                                                fontSize: 12)),
+                                        child: Text(
+                                          'Price',
+                                          style: TextStyle(
+                                            color: Colors.grey,
+                                            fontSize: 12,
+                                          ),
+                                        ),
                                       ),
                                       SizedBox(
                                         width: 110,
-                                        child: Text('Qty',
-                                            style: TextStyle(
-                                                color: Colors.grey,
-                                                fontSize: 12)),
+                                        child: Text(
+                                          'Qty',
+                                          style: TextStyle(
+                                            color: Colors.grey,
+                                            fontSize: 12,
+                                          ),
+                                        ),
                                       ),
                                       Expanded(
-                                        child: Text('Subtotal',
-                                            style: TextStyle(
-                                                color: Colors.grey,
-                                                fontSize: 12)),
+                                        child: Text(
+                                          'Subtotal',
+                                          style: TextStyle(
+                                            color: Colors.grey,
+                                            fontSize: 12,
+                                          ),
+                                        ),
                                       ),
                                       SizedBox(width: 32),
                                     ],
@@ -547,8 +582,7 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                                 // Item rows
                                 if (order.items.isEmpty)
                                   const Padding(
-                                    padding: EdgeInsets.symmetric(
-                                        vertical: 12),
+                                    padding: EdgeInsets.symmetric(vertical: 12),
                                     child: Text(
                                       'No item details available',
                                       style: TextStyle(color: Colors.grey),
@@ -557,8 +591,7 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                                 else
                                   ...order.items.asMap().entries.map(
                                     (entry) => _ItemRow(
-                                      key: ValueKey(
-                                          '${order.id}_${entry.key}'),
+                                      key: ValueKey('${order.id}_${entry.key}'),
                                       item: entry.value,
                                       index: entry.key,
                                       orderId: order.id,
@@ -567,16 +600,20 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                                   ),
 
                                 const Divider(height: 30),
-                                _sr('Subtotal',
-                                    'Rs ${order.subtotal.toStringAsFixed(0)}'),
+                                _sr(
+                                  'Subtotal',
+                                  'Rs ${order.subtotal.toStringAsFixed(0)}',
+                                ),
                                 _sr(
                                   'Coupon Discount',
                                   order.couponDiscount > 0
                                       ? '-Rs ${order.couponDiscount.toStringAsFixed(0)}'
                                       : '-Rs 0',
                                 ),
-                                _sr('Shipping',
-                                    'Rs ${order.shippingFee.toStringAsFixed(0)}'),
+                                _sr(
+                                  'Shipping',
+                                  'Rs ${order.shippingFee.toStringAsFixed(0)}',
+                                ),
                                 const Divider(height: 30),
                                 _sr(
                                   'Total',
@@ -604,28 +641,29 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                               children: [
                                 const Text(
                                   'Update Status',
-                                  style: TextStyle(
-                                      fontWeight: FontWeight.w600),
+                                  style: TextStyle(fontWeight: FontWeight.w600),
                                 ),
                                 const SizedBox(height: 12),
                                 DropdownButtonFormField<String>(
                                   value: selectedStatus,
-                                  items: const [
-                                    'Pending',
-                                    'Processing',
-                                    'Shipped',
-                                    'Delivered',
-                                    'Cancelled',
-                                  ]
-                                      .map((e) => DropdownMenuItem(
-                                            value: e,
-                                            child: Text(e),
-                                          ))
-                                      .toList(),
+                                  items:
+                                      const [
+                                            'Pending',
+                                            'Processing',
+                                            'Shipped',
+                                            'Delivered',
+                                            'Cancelled',
+                                          ]
+                                          .map(
+                                            (e) => DropdownMenuItem(
+                                              value: e,
+                                              child: Text(e),
+                                            ),
+                                          )
+                                          .toList(),
                                   onChanged: (val) {
                                     if (val != null) {
-                                      setState(
-                                          () => selectedStatus = val);
+                                      setState(() => selectedStatus = val);
                                     }
                                   },
                                   decoration: const InputDecoration(
@@ -640,8 +678,9 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                                   const Text(
                                     'Send Notification (optional)',
                                     style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey),
+                                      fontSize: 12,
+                                      color: Colors.grey,
+                                    ),
                                   ),
                                   const SizedBox(height: 6),
                                   DropdownButtonFormField<String>(
@@ -653,22 +692,29 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                                     items: [
                                       const DropdownMenuItem<String>(
                                         value: null,
-                                        child: Text('— None —',
-                                            style: TextStyle(
-                                                color: Colors.grey,
-                                                fontSize: 13)),
+                                        child: Text(
+                                          '— None —',
+                                          style: TextStyle(
+                                            color: Colors.grey,
+                                            fontSize: 13,
+                                          ),
+                                        ),
                                       ),
                                       ..._kNotificationOptions.map(
                                         (e) => DropdownMenuItem(
                                           value: e,
-                                          child: Text(e,
-                                              style: const TextStyle(
-                                                  fontSize: 13)),
+                                          child: Text(
+                                            e,
+                                            style: const TextStyle(
+                                              fontSize: 13,
+                                            ),
+                                          ),
                                         ),
                                       ),
                                     ],
                                     onChanged: (val) => setState(
-                                        () => selectedNotification = val),
+                                      () => selectedNotification = val,
+                                    ),
                                     decoration: const InputDecoration(
                                       border: OutlineInputBorder(),
                                       isDense: true,
@@ -680,8 +726,7 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                                 const SizedBox(height: 12),
                                 Obx(() {
                                   final busy =
-                                      _ctrl.updatingOrderId.value ==
-                                          order.id;
+                                      _ctrl.updatingOrderId.value == order.id;
                                   return SizedBox(
                                     width: double.infinity,
                                     child: ElevatedButton(
@@ -689,29 +734,29 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                                           ? null
                                           : () async {
                                               await _ctrl.updateOrderStatus(
-                                                  order.id,
-                                                  selectedStatus);
+                                                order.id,
+                                                selectedStatus,
+                                              );
                                               if (selectedNotification !=
                                                       null &&
                                                   selectedNotification!
                                                       .isNotEmpty) {
-                                                await _ctrl
-                                                    .sendNotification(
+                                                await _ctrl.sendNotification(
                                                   order.customerId,
                                                   order.id,
                                                   selectedNotification!,
                                                 );
-                                                setState(() =>
-                                                    selectedNotification =
-                                                        null);
+                                                setState(
+                                                  () => selectedNotification =
+                                                      null,
+                                                );
                                               }
                                             },
                                       child: busy
                                           ? const SizedBox(
                                               height: 16,
                                               width: 16,
-                                              child:
-                                                  CircularProgressIndicator(
+                                              child: CircularProgressIndicator(
                                                 strokeWidth: 2,
                                               ),
                                             )
@@ -731,22 +776,24 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                               children: [
                                 const Text(
                                   'Payment Status',
-                                  style: TextStyle(
-                                      fontWeight: FontWeight.w600),
+                                  style: TextStyle(fontWeight: FontWeight.w600),
                                 ),
                                 const SizedBox(height: 12),
                                 DropdownButtonFormField<String>(
                                   value: selectedPaymentStatus,
                                   items: ['Unpaid', 'Paid']
-                                      .map((e) => DropdownMenuItem(
-                                            value: e,
-                                            child: Text(e),
-                                          ))
+                                      .map(
+                                        (e) => DropdownMenuItem(
+                                          value: e,
+                                          child: Text(e),
+                                        ),
+                                      )
                                       .toList(),
                                   onChanged: (val) {
                                     if (val != null) {
-                                      setState(() =>
-                                          selectedPaymentStatus = val);
+                                      setState(
+                                        () => selectedPaymentStatus = val,
+                                      );
                                     }
                                   },
                                   decoration: const InputDecoration(
@@ -757,24 +804,21 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                                 const SizedBox(height: 12),
                                 Obx(() {
                                   final busy =
-                                      _ctrl.updatingOrderId.value ==
-                                          order.id;
+                                      _ctrl.updatingOrderId.value == order.id;
                                   return SizedBox(
                                     width: double.infinity,
                                     child: ElevatedButton(
                                       onPressed: busy
                                           ? null
-                                          : () =>
-                                              _ctrl.updatePaymentStatus(
-                                                order.id,
-                                                selectedPaymentStatus,
-                                              ),
+                                          : () => _ctrl.updatePaymentStatus(
+                                              order.id,
+                                              selectedPaymentStatus,
+                                            ),
                                       child: busy
                                           ? const SizedBox(
                                               height: 16,
                                               width: 16,
-                                              child:
-                                                  CircularProgressIndicator(
+                                              child: CircularProgressIndicator(
                                                 strokeWidth: 2,
                                               ),
                                             )
@@ -787,6 +831,29 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                           ),
                           const SizedBox(height: 20),
 
+                          // Payment Info (method + transaction)
+                          _card(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Payment Info',
+                                  style: TextStyle(fontWeight: FontWeight.w600),
+                                ),
+                                const SizedBox(height: 8),
+                                _sr2(
+                                  'Method',
+                                  order.paymentMethod.isEmpty
+                                      ? 'Cash on Delivery'
+                                      : order.paymentMethod,
+                                ),
+                                if (order.transactionId.isNotEmpty)
+                                  _sr2('Tx ID', order.transactionId),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+
                           // Customer
                           _card(
                             child: Column(
@@ -794,8 +861,7 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                               children: [
                                 const Text(
                                   'Customer',
-                                  style: TextStyle(
-                                      fontWeight: FontWeight.w600),
+                                  style: TextStyle(fontWeight: FontWeight.w600),
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
@@ -803,13 +869,16 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                                       ? 'N/A'
                                       : order.customerName,
                                   style: const TextStyle(
-                                      fontWeight: FontWeight.w500),
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
                                   order.customerEmail,
                                   style: const TextStyle(
-                                      color: Colors.grey, fontSize: 13),
+                                    color: Colors.grey,
+                                    fontSize: 13,
+                                  ),
                                 ),
                               ],
                             ),
@@ -823,53 +892,58 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                               children: [
                                 const Text(
                                   'Shipping Address',
-                                  style: TextStyle(
-                                      fontWeight: FontWeight.w600),
+                                  style: TextStyle(fontWeight: FontWeight.w600),
                                 ),
                                 const SizedBox(height: 8),
                                 if (order.shippingAddress.isEmpty)
                                   const Text(
                                     'No shipping address',
                                     style: TextStyle(
-                                        color: Colors.grey, fontSize: 13),
+                                      color: Colors.grey,
+                                      fontSize: 13,
+                                    ),
                                   )
                                 else ...[
-                                  _al(order.shippingAddress['name']
-                                          as String? ??
-                                      order.shippingAddress['Name']
-                                          as String? ??
-                                      ''),
-                                  _al([
-                                    order.shippingAddress['city']
-                                            as String? ??
-                                        order.shippingAddress['City']
+                                  _al(
+                                    order.shippingAddress['name'] as String? ??
+                                        order.shippingAddress['Name']
                                             as String? ??
                                         '',
-                                    order.shippingAddress['postalCode']
+                                  ),
+                                  _al(
+                                    [
+                                      order.shippingAddress['city']
+                                              as String? ??
+                                          order.shippingAddress['City']
+                                              as String? ??
+                                          '',
+                                      order.shippingAddress['postalCode']
+                                              as String? ??
+                                          order.shippingAddress['PostalCode']
+                                              as String? ??
+                                          '',
+                                      order.shippingAddress['country']
+                                              as String? ??
+                                          order.shippingAddress['Country']
+                                              as String? ??
+                                          '',
+                                    ].where((s) => s.isNotEmpty).join(', '),
+                                  ),
+                                  _al(
+                                    order.shippingAddress['phone'] as String? ??
+                                        order.shippingAddress['Phone']
                                             as String? ??
-                                        order.shippingAddress['PostalCode']
+                                        order.shippingAddress['phoneNumber']
                                             as String? ??
                                         '',
-                                    order.shippingAddress['country']
+                                  ),
+                                  _al(
+                                    order.shippingAddress['address']
                                             as String? ??
-                                        order.shippingAddress['Country']
+                                        order.shippingAddress['Address']
                                             as String? ??
                                         '',
-                                  ]
-                                      .where((s) => s.isNotEmpty)
-                                      .join(', ')),
-                                  _al(order.shippingAddress['phone']
-                                          as String? ??
-                                      order.shippingAddress['Phone']
-                                          as String? ??
-                                      order.shippingAddress['phoneNumber']
-                                          as String? ??
-                                      ''),
-                                  _al(order.shippingAddress['address']
-                                          as String? ??
-                                      order.shippingAddress['Address']
-                                          as String? ??
-                                      ''),
+                                  ),
                                 ],
                               ],
                             ),
@@ -898,65 +972,93 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
   }
 
   static Widget _card({required Widget child}) => Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: child,
-      );
+    width: double.infinity,
+    padding: const EdgeInsets.all(20),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: child,
+  );
 
   static Widget _sr(String t, String v, {bool bold = false}) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(t,
-                style: TextStyle(
-                    fontWeight:
-                        bold ? FontWeight.bold : FontWeight.normal)),
-            Text(v,
-                style: TextStyle(
-                    fontWeight:
-                        bold ? FontWeight.bold : FontWeight.normal)),
-          ],
+    padding: const EdgeInsets.symmetric(vertical: 4),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          t,
+          style: TextStyle(
+            fontWeight: bold ? FontWeight.bold : FontWeight.normal,
+          ),
         ),
-      );
+        Text(
+          v,
+          style: TextStyle(
+            fontWeight: bold ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      ],
+    ),
+  );
+
+  /// Two-column label/value row with small text (for compact info cards).
+  static Widget _sr2(String label, String value) => Padding(
+    padding: const EdgeInsets.only(bottom: 6),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 60,
+          child: Text(
+            label,
+            style: const TextStyle(fontSize: 12, color: Colors.grey),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+          ),
+        ),
+      ],
+    ),
+  );
 
   static Widget _actionBtn({
     required IconData icon,
     required String label,
     required Color color,
     required VoidCallback onTap,
-  }) =>
-      InkWell(
-        onTap: onTap,
+  }) => InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(6),
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        border: Border.all(color: color.withOpacity(0.6)),
         borderRadius: BorderRadius.circular(6),
-        child: Container(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            border: Border.all(color: color.withOpacity(0.6)),
-            borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 16),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, color: color, size: 16),
-              const SizedBox(width: 4),
-              Text(label,
-                  style: TextStyle(
-                      color: color,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500)),
-            ],
-          ),
-        ),
-      );
+        ],
+      ),
+    ),
+  );
 
-  static Widget _qtyBtn(
-          {required IconData icon, VoidCallback? onTap}) =>
+  static Widget _qtyBtn({required IconData icon, VoidCallback? onTap}) =>
       InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(4),
@@ -964,16 +1066,15 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
           padding: const EdgeInsets.all(2),
           decoration: BoxDecoration(
             border: Border.all(
-                color: onTap != null
-                    ? Colors.grey
-                    : Colors.grey.shade300),
+              color: onTap != null ? Colors.grey : Colors.grey.shade300,
+            ),
             borderRadius: BorderRadius.circular(4),
           ),
-          child: Icon(icon,
-              size: 14,
-              color: onTap != null
-                  ? Colors.black87
-                  : Colors.grey.shade300),
+          child: Icon(
+            icon,
+            size: 14,
+            color: onTap != null ? Colors.black87 : Colors.grey.shade300,
+          ),
         ),
       );
 }
@@ -1022,8 +1123,7 @@ class _ItemRowState extends State<_ItemRow> {
       _qty = newQty;
       _saving = true;
     });
-    await widget.ctrl
-        .updateItemQuantity(widget.orderId, widget.index, newQty);
+    await widget.ctrl.updateItemQuantity(widget.orderId, widget.index, newQty);
     if (mounted) setState(() => _saving = false);
   }
 
@@ -1037,8 +1137,7 @@ class _ItemRowState extends State<_ItemRow> {
           // Product name
           Expanded(
             flex: 4,
-            child: Text(item.productName,
-                style: const TextStyle(fontSize: 13)),
+            child: Text(item.productName, style: const TextStyle(fontSize: 13)),
           ),
 
           // Prescribed badge
@@ -1048,9 +1147,7 @@ class _ItemRowState extends State<_ItemRow> {
               item.isPrescribed ? 'Yes' : 'No',
               style: TextStyle(
                 fontSize: 12,
-                color: item.isPrescribed
-                    ? Colors.orange.shade700
-                    : Colors.grey,
+                color: item.isPrescribed ? Colors.orange.shade700 : Colors.grey,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -1075,11 +1172,11 @@ class _ItemRowState extends State<_ItemRow> {
                   onTap: (!_saving && _qty > 1) ? () => _save(_qty - 1) : null,
                 ),
                 Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6),
-                  child: Text('$_qty',
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold)),
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  child: Text(
+                    '$_qty',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ),
                 _qtyBtn(
                   icon: Icons.add,
@@ -1101,13 +1198,16 @@ class _ItemRowState extends State<_ItemRow> {
           SizedBox(
             width: 32,
             child: IconButton(
-              icon: const Icon(Icons.cancel_outlined,
-                  color: Colors.red, size: 18),
+              icon: const Icon(
+                Icons.cancel_outlined,
+                color: Colors.red,
+                size: 18,
+              ),
               tooltip: 'Remove item',
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
-              onPressed: () => widget.ctrl
-                  .removeOrderItem(widget.orderId, widget.index),
+              onPressed: () =>
+                  widget.ctrl.removeOrderItem(widget.orderId, widget.index),
             ),
           ),
         ],
@@ -1115,8 +1215,7 @@ class _ItemRowState extends State<_ItemRow> {
     );
   }
 
-  static Widget _qtyBtn(
-          {required IconData icon, VoidCallback? onTap}) =>
+  static Widget _qtyBtn({required IconData icon, VoidCallback? onTap}) =>
       InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(4),
@@ -1124,16 +1223,15 @@ class _ItemRowState extends State<_ItemRow> {
           padding: const EdgeInsets.all(2),
           decoration: BoxDecoration(
             border: Border.all(
-                color: onTap != null
-                    ? Colors.grey
-                    : Colors.grey.shade300),
+              color: onTap != null ? Colors.grey : Colors.grey.shade300,
+            ),
             borderRadius: BorderRadius.circular(4),
           ),
-          child: Icon(icon,
-              size: 14,
-              color: onTap != null
-                  ? Colors.black87
-                  : Colors.grey.shade300),
+          child: Icon(
+            icon,
+            size: 14,
+            color: onTap != null ? Colors.black87 : Colors.grey.shade300,
+          ),
         ),
       );
 }
@@ -1146,14 +1244,11 @@ class _IC extends StatelessWidget {
   const _IC(this.title, this.value);
   @override
   Widget build(BuildContext context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title,
-              style:
-                  const TextStyle(color: Colors.grey, fontSize: 12)),
-          const SizedBox(height: 6),
-          Text(value,
-              style: const TextStyle(fontWeight: FontWeight.w600)),
-        ],
-      );
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(title, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+      const SizedBox(height: 6),
+      Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
+    ],
+  );
 }

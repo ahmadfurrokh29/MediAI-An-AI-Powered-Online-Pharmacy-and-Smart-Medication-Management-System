@@ -143,7 +143,7 @@ class _CouponsPageState extends State<CouponsPage> {
               _StatCard(
                 label: 'Active',
                 value: controller.coupons
-                    .where((c) => c.isActive)
+                    .where((c) => c.isEffectivelyActive)
                     .length
                     .toString(),
                 color: Colors.green,
@@ -211,6 +211,7 @@ class _CouponsPageState extends State<CouponsPage> {
                       DataColumn(label: Text("Description")),
                       DataColumn(label: Text("Status")),
                       DataColumn(label: Text("Used / Limit")),
+                      DataColumn(label: Text("Per User")),
                       DataColumn(label: Text("Start Date")),
                       DataColumn(label: Text("End Date")),
                       DataColumn(label: Text("Action")),
@@ -226,7 +227,19 @@ class _CouponsPageState extends State<CouponsPage> {
                               ),
                             ),
                           ),
-                          DataCell(Text(coupon.discountValue.toString())),
+                          DataCell(
+                            Text(
+                              coupon.type == 'FLAT'
+                                  ? 'Rs ${coupon.discountValue.toStringAsFixed(0)}'
+                                  : '${coupon.discountValue.toStringAsFixed(0)}%',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: coupon.type == 'FLAT'
+                                    ? Colors.green.shade700
+                                    : Colors.blue.shade700,
+                              ),
+                            ),
+                          ),
                           DataCell(
                             Chip(
                               label: Text(
@@ -261,7 +274,7 @@ class _CouponsPageState extends State<CouponsPage> {
                                     width: 8,
                                     height: 8,
                                     decoration: BoxDecoration(
-                                      color: coupon.isActive
+                                      color: coupon.isEffectivelyActive
                                           ? Colors.green
                                           : Colors.red,
                                       shape: BoxShape.circle,
@@ -269,9 +282,11 @@ class _CouponsPageState extends State<CouponsPage> {
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
-                                    coupon.isActive ? "Active" : "Inactive",
+                                    coupon.isEffectivelyActive
+                                        ? "Active"
+                                        : "Inactive",
                                     style: TextStyle(
-                                      color: coupon.isActive
+                                      color: coupon.isEffectivelyActive
                                           ? Colors.green
                                           : Colors.red,
                                       fontWeight: FontWeight.w600,
@@ -320,6 +335,32 @@ class _CouponsPageState extends State<CouponsPage> {
                                   ),
                                 ),
                               ],
+                            ),
+                          ),
+                          // ── Per-User Limit column ─────────────────────────
+                          DataCell(
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.indigo.shade50,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: Colors.indigo.shade100,
+                                ),
+                              ),
+                              child: Text(
+                                coupon.perUserLimit <= 0
+                                    ? '∞ unlimited'
+                                    : '${coupon.perUserLimit}x per user',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.indigo.shade700,
+                                ),
+                              ),
                             ),
                           ),
                           DataCell(Text(_formatDate(coupon.startDate))),

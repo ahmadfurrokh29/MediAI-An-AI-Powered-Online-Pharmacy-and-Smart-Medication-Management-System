@@ -44,7 +44,9 @@ class _UpdateCouponPageState extends State<UpdateCouponPage> {
     descriptionController = TextEditingController(
       text: widget.coupon['description'] ?? '',
     );
-    usageLimitController = TextEditingController(text: '100'); // Default value
+    usageLimitController = TextEditingController(
+      text: (widget.coupon['usageLimit'] ?? 100).toString(),
+    );
     startDateController = TextEditingController(
       text: widget.coupon['startDate'],
     );

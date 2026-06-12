@@ -13,6 +13,7 @@ import 'package:med/features/shop/controllers/cart_controller.dart';
 import 'package:med/features/shop/controllers/coupon_controller.dart';
 import 'package:med/features/shop/controllers/payment_controller.dart';
 import 'package:med/features/shop/models/order_model.dart';
+import 'package:med/features/shop/services/payment_service.dart';
 import 'package:med/navigation_menu.dart';
 import 'package:med/utils/constants/image_strings.dart';
 
@@ -111,8 +112,6 @@ class OrderController extends GetxController {
     }
   }
 
-
-
   Future<void> fetchOrders() async {
     try {
       isLoading.value = true;
@@ -199,14 +198,14 @@ class OrderController extends GetxController {
         if (productName.isEmpty) continue;
 
         for (final med in medicines) {
-          final medName =
-              (med['medicine_name'] as String? ?? '').toLowerCase().trim();
+          final medName = (med['medicine_name'] as String? ?? '')
+              .toLowerCase()
+              .trim();
           if (medName.isEmpty) continue;
           if (medName.contains(productName) || productName.contains(medName)) {
-            final currentStock =
-                (med['available_stock'] as num? ?? 0).toInt();
-            final currentDoses =
-                (med['total_no_of_doses'] as num? ?? 0).toInt();
+            final currentStock = (med['available_stock'] as num? ?? 0).toInt();
+            final currentDoses = (med['total_no_of_doses'] as num? ?? 0)
+                .toInt();
             await LocalDB.updateMedicineStats(
               med['medId'] as String,
               currentDoses,
@@ -293,6 +292,27 @@ class OrderController extends GetxController {
       final finalTotal =
           cart.subtotal + cart.shippingFee + cart.taxFee - couponDiscount;
 
+      // ── Mock payment engine (non-COD) ──────────────────────────────────
+      String transactionId = '';
+      if (!payment.isCOD) {
+        final result = await PaymentService.instance.processPayment(
+          userId: uid,
+          amount: finalTotal.clamp(0, double.infinity),
+          paymentMethod: payment.paymentMethodString,
+        );
+        if (!result.success) {
+          Get.snackbar(
+            'Payment Failed',
+            result.errorMessage ?? 'Please try again.',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Colors.red,
+            colorText: Colors.white,
+          );
+          return;
+        }
+        transactionId = result.transactionId;
+      }
+
       final order = OrderModel(
         id: '', // Firestore will assign
         customerId: uid,
@@ -300,6 +320,8 @@ class OrderController extends GetxController {
         customerEmail: user.email,
         orderStatus: 'Pending',
         paymentStatus: payment.paymentStatusForOrder,
+        paymentMethod: payment.paymentMethodString,
+        transactionId: transactionId,
         totalAmount: finalTotal.clamp(0, double.infinity),
         subtotal: cart.subtotal,
         couponCode: couponCode,
@@ -313,6 +335,14 @@ class OrderController extends GetxController {
 
       // Write to Firestore
       final docRef = await _db.collection('Orders').add(order.toMap());
+
+      // Back-fill orderId on the transaction document (non-COD only).
+      if (transactionId.isNotEmpty) {
+        await PaymentService.instance.updateTransactionOrderId(
+          transactionId,
+          docRef.id,
+        );
+      }
 
       // Redeem coupon server-side (FastAPI + Firestore) if applied
       if (appliedCoupon != null) {
@@ -332,7 +362,7 @@ class OrderController extends GetxController {
         () => SuccessScreen(
           image: MImages.staticSuccessIllustration,
           title: 'Order Placed!',
-          subTitle: payment.selectedMethod.value == PaymentMethod.cashOnDelivery
+          subTitle: payment.isCOD
               ? 'Your order has been placed.\nPlease pay upon delivery.'
               : 'Payment successful. Your order will be shipped soon!',
           onPressed: () => Get.offAll(() => const NavigationMenu()),

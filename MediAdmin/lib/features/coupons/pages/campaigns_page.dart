@@ -278,6 +278,16 @@ class _CampaignsPageState extends State<CampaignsPage> {
     CouponController controller,
     CampaignModel campaign,
   ) {
+    // Find the coupon to show discount detail
+    final coupon = controller.coupons.firstWhereOrNull(
+      (c) => c.id == campaign.couponId,
+    );
+    final discountLabel = coupon == null
+        ? '—'
+        : coupon.type == 'FLAT'
+        ? 'Rs ${coupon.discountValue.toStringAsFixed(0)} flat off'
+        : '${coupon.discountValue.toStringAsFixed(0)}% off';
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -296,10 +306,13 @@ class _CampaignsPageState extends State<CampaignsPage> {
             Text('Send campaign "${campaign.name}" to all targeted users?'),
             const SizedBox(height: 12),
             _InfoRow(label: 'Coupon Code', value: campaign.couponCode),
+            _InfoRow(label: 'Discount', value: discountLabel),
             _InfoRow(label: 'Target', value: campaign.targetType),
             _InfoRow(
               label: 'Users targeted',
-              value: campaign.totalTargeted.toString(),
+              value: campaign.totalTargeted > 0
+                  ? campaign.totalTargeted.toString()
+                  : 'All users',
             ),
           ],
         ),
@@ -387,11 +400,12 @@ class _CampaignsPageState extends State<CampaignsPage> {
                     value: selectedCouponId,
                     hint: const Text('Select active coupon'),
                     items: coupons.map((CouponModel c) {
+                      final discLabel = c.type == 'FLAT'
+                          ? 'Rs ${c.discountValue.toStringAsFixed(0)} off'
+                          : '${c.discountValue.toStringAsFixed(0)}% off';
                       return DropdownMenuItem<String>(
                         value: c.id,
-                        child: Text(
-                          '${c.code} (${c.type} — ${c.discountValue})',
-                        ),
+                        child: Text('${c.code}  ·  $discLabel'),
                       );
                     }).toList(),
                     onChanged: (v) => setS(() => selectedCouponId = v),

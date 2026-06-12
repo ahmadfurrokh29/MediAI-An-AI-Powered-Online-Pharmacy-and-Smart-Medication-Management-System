@@ -47,6 +47,8 @@ class OrderModel {
   final List<OrderItemModel> items;
   final String orderStatus;
   final String paymentStatus;
+  final String paymentMethod; // e.g. "Cash on Delivery", "Card Payment"
+  final String transactionId; // empty for COD
   final double totalAmount;
   final double subtotal;
   final String couponCode;
@@ -64,6 +66,8 @@ class OrderModel {
     required this.items,
     required this.orderStatus,
     required this.paymentStatus,
+    this.paymentMethod = 'Cash on Delivery',
+    this.transactionId = '',
     required this.totalAmount,
     required this.subtotal,
     required this.couponCode,
@@ -130,6 +134,14 @@ class OrderModel {
           data['status'] as String? ??
           'Pending',
       paymentStatus: _resolvePaymentStatus(data),
+      paymentMethod:
+          data['paymentMethod'] as String? ??
+          data['PaymentMethod'] as String? ??
+          'Cash on Delivery',
+      transactionId:
+          data['transactionId'] as String? ??
+          data['TransactionId'] as String? ??
+          '',
       totalAmount:
           (data['totalAmount'] as num? ??
                   data['TotalAmount'] as num? ??
@@ -150,20 +162,22 @@ class OrderModel {
     );
   }
 
-  /// If payment method is card/credit/debit, status is always Paid.
+  /// If payment method is card/credit/debit/easypaisa/jazzcash, status is Paid.
   static String _resolvePaymentStatus(Map<String, dynamic> data) {
     final method =
         (data['paymentMethod'] as String? ??
                 data['PaymentMethod'] as String? ??
                 '')
             .toLowerCase();
-    final isCard =
+    final isOnline =
         method.contains('card') ||
         method.contains('credit') ||
         method.contains('debit') ||
         method.contains('stripe') ||
-        method.contains('online');
-    if (isCard) return 'Paid';
+        method.contains('online') ||
+        method.contains('easypaisa') ||
+        method.contains('jazzcash');
+    if (isOnline) return 'Paid';
     return data['paymentStatus'] as String? ??
         data['PaymentStatus'] as String? ??
         'Unpaid';
@@ -176,6 +190,8 @@ class OrderModel {
     'items': items.map((e) => e.toMap()).toList(),
     'orderStatus': orderStatus,
     'paymentStatus': paymentStatus,
+    'paymentMethod': paymentMethod,
+    'transactionId': transactionId,
     'totalAmount': totalAmount,
     'subtotal': subtotal,
     'couponCode': couponCode,
@@ -201,6 +217,8 @@ class OrderModel {
       items: items ?? this.items,
       orderStatus: orderStatus ?? this.orderStatus,
       paymentStatus: paymentStatus ?? this.paymentStatus,
+      paymentMethod: paymentMethod,
+      transactionId: transactionId,
       totalAmount: totalAmount ?? this.totalAmount,
       subtotal: subtotal ?? this.subtotal,
       couponCode: couponCode,

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:med/features/shop/controllers/coupon_controller.dart';
 import 'package:med/features/shop/models/user_coupon_model.dart';
+import 'package:med/features/shop/screens/cart/cart.dart';
 import 'package:med/utils/constants/colors.dart';
 import 'package:med/utils/helpers/helper_functions.dart';
 
@@ -169,23 +171,25 @@ class _CouponCard extends StatelessWidget {
                           ),
                         ),
                         const Spacer(),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: accentColor.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            uc.discountType == 'PERCENTAGE'
-                                ? '${uc.discountValue.toStringAsFixed(0)}% OFF'
-                                : 'Rs ${uc.discountValue.toStringAsFixed(0)} OFF',
-                            style: TextStyle(
-                              color: accentColor,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
+                        // Live discount badge — reads from Coupons collection,
+                        // stays correct even if UserCoupon doc has stale DiscountValue = 0.
+                        Obx(
+                          () => Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: accentColor.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              couponCtrl.liveDiscountLabelFor(uc),
+                              style: TextStyle(
+                                color: accentColor,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
                             ),
                           ),
                         ),
@@ -221,6 +225,34 @@ class _CouponCard extends StatelessWidget {
                         ],
                       ),
                     ],
+                    // ── Uses remaining (only shown for active multi-use coupons)
+                    if (type == 'active') ...[
+                      Obx(() {
+                        final limit = couponCtrl.perUserLimitFor(uc);
+                        if (limit <= 1) return const SizedBox.shrink();
+                        final left = couponCtrl.usesLeftFor(uc);
+                        final color =
+                            left <= 1 ? Colors.orange.shade600 : accentColor;
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Row(
+                            children: [
+                              Icon(Icons.replay_outlined,
+                                  size: 12, color: color),
+                              const SizedBox(width: 4),
+                              Text(
+                                '$left of $limit uses remaining',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: color,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                    ],
                     // ── Accept / Decline for pending coupons ──────────────
                     if (type == 'pending') ...[
                       const SizedBox(height: 12),
@@ -252,6 +284,79 @@ class _CouponCard extends StatelessWidget {
                               onPressed: () => couponCtrl.declineCoupon(uc),
                               child: const Text('Decline'),
                             ),
+                          ),
+                        ],
+                      ),
+                    ],
+                    // ── "Use Now" shortcut for active coupons ─────────────
+                    if (type == 'active') ...[
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          // Copy code button
+                          OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: accentColor,
+                              side: BorderSide(
+                                color: accentColor.withValues(alpha: 0.5),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            icon: const Icon(Icons.copy, size: 14),
+                            label: Text(
+                              uc.couponCode,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontFamily: 'monospace',
+                              ),
+                            ),
+                            onPressed: () {
+                              Clipboard.setData(
+                                ClipboardData(text: uc.couponCode),
+                              );
+                              Get.snackbar(
+                                'Copied!',
+                                '"${uc.couponCode}" copied to clipboard.',
+                                snackPosition: SnackPosition.BOTTOM,
+                                duration: const Duration(seconds: 2),
+                              );
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                          // Navigate to cart with code pre-filled
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: accentColor,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 6,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            icon: const Icon(Icons.shopping_cart, size: 14),
+                            label: const Text(
+                              'Use Now',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                            onPressed: () {
+                              // Pre-fill the coupon code so it's ready at cart
+                              couponCtrl.couponCodeController.text =
+                                  uc.couponCode;
+                              Get.to(() => const CartScreen());
+                            },
                           ),
                         ],
                       ),

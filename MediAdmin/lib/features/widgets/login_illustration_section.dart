@@ -10,7 +10,7 @@ class LoginIllustrationSection extends StatelessWidget {
         gradient: LinearGradient(
           colors: [
             Color.fromARGB(255, 60, 221, 87),
-            Color.fromARGB(255, 57, 58, 63),
+            Color.fromARGB(255, 50, 218, 62),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
