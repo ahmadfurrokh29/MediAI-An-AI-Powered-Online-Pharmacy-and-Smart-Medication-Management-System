@@ -84,8 +84,7 @@ class CouponController extends GetxController {
       _perUserLimits[uc.couponCode.toUpperCase()] ?? 1;
 
   /// How many times the current user has already redeemed coupon [uc].
-  int myUsageCountFor(UserCouponModel uc) =>
-      _myUsageCounts[uc.couponId] ?? 0;
+  int myUsageCountFor(UserCouponModel uc) => _myUsageCounts[uc.couponId] ?? 0;
 
   /// Remaining uses the current user has for coupon [uc].
   /// Returns 999 when perUserLimit == 0 (unlimited).
@@ -114,10 +113,12 @@ class CouponController extends GetxController {
   /// them as EXPIRED in Firestore. Runs in background — failures are silent.
   Future<void> _expireOverdueCoupons(List<UserCouponModel> list) async {
     final now = DateTime.now();
-    final overdue = list.where((uc) =>
-        (uc.status == 'ACCEPTED' || uc.status == 'PENDING') &&
-        uc.expiresAt != null &&
-        now.isAfter(uc.expiresAt!));
+    final overdue = list.where(
+      (uc) =>
+          (uc.status == 'ACCEPTED' || uc.status == 'PENDING') &&
+          uc.expiresAt != null &&
+          now.isAfter(uc.expiresAt!),
+    );
     for (final uc in overdue) {
       try {
         await _repo.expireUserCoupon(uc.id);
@@ -167,10 +168,12 @@ class CouponController extends GetxController {
   /// and caches them reactively for "uses left" display.
   Future<void> _refreshUsageCounts(List<UserCouponModel> list) async {
     final toFetch = list
-        .where((uc) =>
-            (uc.isAccepted || uc.isPending) &&
-            uc.couponId.isNotEmpty &&
-            !_myUsageCounts.containsKey(uc.couponId))
+        .where(
+          (uc) =>
+              (uc.isAccepted || uc.isPending) &&
+              uc.couponId.isNotEmpty &&
+              !_myUsageCounts.containsKey(uc.couponId),
+        )
         .map((uc) => uc.couponId)
         .toSet();
 

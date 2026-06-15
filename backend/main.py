@@ -1,10 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from openai import OpenAI, RateLimitError, AuthenticationError
-from google import genai
+from pydantic import BaseModel, Field
+from groq import Groq
 import os
 import logging
+from typing import List, Optional
 from dotenv import load_dotenv
 
 # Coupon Engine routers
@@ -18,6 +18,21 @@ load_dotenv()
 
 app = FastAPI(title="MediAI — Pharmaceutical Chatbot & Coupon Engine")
 
+
+@app.on_event("startup")
+async def warmup_embedder():
+    """Pre-load the embedding model at startup so the first user request is fast."""
+    import asyncio
+    import logging
+    async def _warm():
+        try:
+            from rag.embedder import embed_query
+            embed_query("warmup")
+            logging.info("[Startup] Embedding model warmed up ✓")
+        except Exception as exc:
+            logging.warning("[Startup] Warmup skipped: %s", exc)
+    asyncio.create_task(_warm())
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -30,8 +45,9 @@ app.include_router(coupon_router)
 app.include_router(coupon_admin_router)
 app.include_router(campaign_router)
 
-openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-gemini_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+# Single LLM provider — Groq (Llama 3.3 70B). No fallback chain.
+GROQ_MODEL = "llama-3.3-70b-versatile"
+groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"), timeout=30.0, max_retries=1)
 
 SYSTEM_PROMPT = """You are a pharmaceutical assistant AI integrated into a medicine e-commerce app called MediAI.
 
@@ -67,21 +83,36 @@ class ChatResponse(BaseModel):
     reply: str
 
 
-def _call_gemini(message: str) -> str:
-    """Fallback: call Gemini gemini-2.0-flash with the same system prompt."""
-    response = gemini_client.models.generate_content(
-        model="gemini-2.5-flash-lite",
-        contents=f"{SYSTEM_PROMPT}\n\nUser: {message}",
+# ── RAG request / response models ─────────────────────────────────────────────
+
+class RAGChatRequest(BaseModel):
+    message: str = Field(..., description="The user's pharmaceutical question")
+    drug_filter: Optional[str] = Field(
+        None,
+        description="Optional drug name to restrict retrieval (e.g. 'ibuprofen')",
     )
-    return response.text.strip()
+    top_k: int = Field(5, ge=1, le=20, description="Max context chunks to retrieve")
+
+
+class SourceCitation(BaseModel):
+    drug_name: str
+    section:   str
+    source:    str
+    score:     float
+
+
+class RAGChatResponse(BaseModel):
+    reply:    str
+    sources:  List[SourceCitation]
+    rag_used: bool
 
 
 @app.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
-    # ── Try OpenAI first ──────────────────────────────────────────────────────
+    # ── Single provider: Groq (Llama 3.3 70B) ─────────────────────────────────
     try:
-        response = openai_client.chat.completions.create(
-            model="gpt-4o-mini",
+        response = groq_client.chat.completions.create(
+            model=GROQ_MODEL,
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": request.message},
@@ -90,24 +121,73 @@ async def chat(request: ChatRequest):
             temperature=0.3,
         )
         return ChatResponse(reply=response.choices[0].message.content.strip())
-
-    except (RateLimitError, AuthenticationError) as e:
-        logging.warning("OpenAI unavailable (%s) — falling back to Gemini", type(e).__name__)
-
     except Exception as e:
-        logging.error("OpenAI unexpected error: %s", str(e))
-
-    # ── Fallback: Gemini ──────────────────────────────────────────────────────
-    try:
-        reply = _call_gemini(request.message)
-        logging.info("Gemini fallback successful")
-        return ChatResponse(reply=reply)
-    except Exception as e:
-        logging.error("Gemini fallback also failed: %s", str(e))
+        logging.error("Groq chat error: %s", str(e))
         return ChatResponse(reply="I'm having trouble connecting right now. Please try again in a moment.")
 
 
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+
+# ── RAG Chat endpoint ─────────────────────────────────────────────────────────
+
+@app.post("/chat/rag", response_model=RAGChatResponse, tags=["RAG Chat"])
+async def rag_chat_endpoint(request: RAGChatRequest):
+    """
+    RAG-augmented pharmaceutical chat.
+
+    Pipeline:
+      1. Embed user question with BAAI/bge-small-en-v1.5
+      2. Retrieve top-K relevant chunks from ChromaDB (DailyMed + OpenFDA)
+      3. Inject context into LLM prompt (Groq — Llama 3.3 70B)
+      4. Return grounded answer + source citations
+
+    The LLM is strictly instructed to answer ONLY from retrieved context
+    and to refuse hallucinating medical information.
+    """
+    from rag.chat_service import rag_chat
+
+    result = rag_chat(
+        user_query=request.message,
+        top_k=request.top_k,
+        drug_filter=request.drug_filter,
+    )
+    return RAGChatResponse(
+        reply=result["reply"],
+        sources=[SourceCitation(**s) for s in result["sources"]],
+        rag_used=result["rag_used"],
+    )
+
+
+@app.get("/rag/debug", tags=["RAG Chat"])
+async def rag_debug(q: str = "side effects of ibuprofen"):
+    """Debug: return raw ChromaDB distances for a query (no score filter)."""
+    from rag.embedder import embed_query
+    from rag.vector_store import query_store
+    vec = embed_query(q)
+    raw = query_store(vec, top_k=5)
+    distances = raw.get("distances", [[]])[0]
+    metas = raw.get("metadatas", [[]])[0]
+    return {
+        "query": q,
+        "results": [
+            {"similarity": round(1.0 - d, 4), "raw_distance": round(d, 4),
+             "drug": m.get("drug_name"), "section": m.get("section")}
+            for d, m in zip(distances, metas)
+        ]
+    }
+
+
+@app.get("/rag/status", tags=["RAG Chat"])
+async def rag_status():
+    """Returns the current state of the vector store (doc count, collection name)."""
+    from rag.vector_store import collection_count
+    from rag.config import CHROMA_COLLECTION_NAME, TARGET_DRUGS
+    return {
+        "collection":   CHROMA_COLLECTION_NAME,
+        "total_chunks": collection_count(),
+        "target_drugs": TARGET_DRUGS,
+    }
 

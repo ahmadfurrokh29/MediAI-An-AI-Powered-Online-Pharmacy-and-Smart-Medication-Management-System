@@ -5,3 +5,6 @@ __pycache__/
 .venv/
 venv/
 env/
+
+# ChromaDB persistent store — can be hundreds of MB
+rag/data/

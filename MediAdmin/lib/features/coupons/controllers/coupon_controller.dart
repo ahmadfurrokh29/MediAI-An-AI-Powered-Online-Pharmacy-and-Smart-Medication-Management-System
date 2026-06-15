@@ -80,8 +80,9 @@ class CouponController extends GetxController {
   Future<void> _autoExpireOldCoupons() async {
     final now = DateTime.now();
     final toExpire = coupons
-        .where((c) =>
-            c.isActive && c.endDate != null && now.isAfter(c.endDate!))
+        .where(
+          (c) => c.isActive && c.endDate != null && now.isAfter(c.endDate!),
+        )
         .toList();
 
     if (toExpire.isEmpty) return;

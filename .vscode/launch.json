@@ -1,0 +1,12 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "MediAI (Flutter + Backend)",
+      "type": "dart",
+      "request": "launch",
+      "program": "lib/main.dart",
+      "preLaunchTask": "Start MediAI Backend"
+    }
+  ]
+}

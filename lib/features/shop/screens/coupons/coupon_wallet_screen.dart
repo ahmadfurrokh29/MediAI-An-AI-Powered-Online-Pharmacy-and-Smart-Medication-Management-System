@@ -231,14 +231,18 @@ class _CouponCard extends StatelessWidget {
                         final limit = couponCtrl.perUserLimitFor(uc);
                         if (limit <= 1) return const SizedBox.shrink();
                         final left = couponCtrl.usesLeftFor(uc);
-                        final color =
-                            left <= 1 ? Colors.orange.shade600 : accentColor;
+                        final color = left <= 1
+                            ? Colors.orange.shade600
+                            : accentColor;
                         return Padding(
                           padding: const EdgeInsets.only(top: 6),
                           child: Row(
                             children: [
-                              Icon(Icons.replay_outlined,
-                                  size: 12, color: color),
+                              Icon(
+                                Icons.replay_outlined,
+                                size: 12,
+                                color: color,
+                              ),
                               const SizedBox(width: 4),
                               Text(
                                 '$left of $limit uses remaining',
