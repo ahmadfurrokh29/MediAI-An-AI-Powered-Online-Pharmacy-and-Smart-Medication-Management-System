@@ -11,6 +11,7 @@ import 'package:med/features/shop/screens/product_details/product_details.dart';
 import 'package:med/utils/constants/colors.dart';
 import 'package:med/utils/constants/image_strings.dart';
 import 'package:med/utils/constants/sizes.dart';
+import 'package:med/features/shop/controllers/wishlist_controller.dart';
 import 'package:med/utils/helpers/helper_functions.dart';
 
 // Fallback image pool — same pool used by the vertical card
@@ -120,9 +121,9 @@ class MProductCardHorizontal extends StatelessWidget {
                   Positioned(
                     top: 0,
                     right: 0,
-                    child: MCircularIcon(
-                      icon: Iconsax.heart5,
-                      color: Colors.red,
+                    child: _HorizontalWishlistButton(
+                      productId: (productData?['id'] ?? '').toString(),
+                      productData: productData,
                     ),
                   ),
                 ],
@@ -180,5 +181,30 @@ class MProductCardHorizontal extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _HorizontalWishlistButton extends StatelessWidget {
+  const _HorizontalWishlistButton({
+    required this.productId,
+    required this.productData,
+  });
+
+  final String productId;
+  final Map<String, dynamic>? productData;
+
+  @override
+  Widget build(BuildContext context) {
+    final ctrl = Get.find<WishlistController>();
+    return Obx(() {
+      final wishlisted = ctrl.isWishlisted(productId);
+      return MCircularIcon(
+        icon: wishlisted ? Iconsax.heart5 : Iconsax.heart,
+        color: wishlisted ? Colors.red : Colors.grey,
+        onPressed: productId.isEmpty
+            ? null
+            : () => ctrl.toggleWishlist(productId, productData),
+      );
+    });
   }
 }

@@ -42,15 +42,19 @@ def retrieve_context(
     top_k: int = TOP_K,
     min_score: float = MIN_SCORE,
     drug_filter: Optional[str] = None,
+    section_filter: Optional[str] = None,
+    source_filter: Optional[str] = None,
 ) -> List[RetrievedChunk]:
     """
     Retrieve the most relevant pharmaceutical chunks for [query].
 
     Args:
-        query       : The user's natural-language question
-        top_k       : Maximum chunks to consider before score filtering
-        min_score   : Discard chunks with similarity below this threshold
-        drug_filter : Optionally restrict retrieval to a specific drug name
+        query          : The user's natural-language question
+        top_k          : Maximum chunks to consider before score filtering
+        min_score      : Discard chunks with similarity below this threshold
+        drug_filter    : Restrict retrieval to a specific drug name
+        section_filter : Restrict to a canonical section (e.g. "dosage", "side_effects")
+        source_filter  : Restrict to a data source ("dailymed" | "openfda")
 
     Returns:
         A list of RetrievedChunk objects sorted by descending similarity score.
@@ -61,10 +65,21 @@ def retrieve_context(
     # 1. Embed the query
     query_vector = embed_query(query)
 
-    # 2. Build optional metadata filter
-    where_filter = None
+    # 2. Build optional metadata filter — supports multiple conditions via $and
+    conditions = []
     if drug_filter:
-        where_filter = {"drug_name": {"$eq": drug_filter.lower().strip()}}
+        conditions.append({"drug_name": {"$eq": drug_filter.lower().strip()}})
+    if section_filter:
+        conditions.append({"section": {"$eq": section_filter}})
+    if source_filter:
+        conditions.append({"source": {"$eq": source_filter}})
+
+    if len(conditions) == 0:
+        where_filter = None
+    elif len(conditions) == 1:
+        where_filter = conditions[0]
+    else:
+        where_filter = {"$and": conditions}
 
     # 3. Query ChromaDB
     raw = query_store(query_vector, top_k=top_k, where_filter=where_filter)
@@ -101,11 +116,15 @@ def retrieve_context(
     results.sort(key=lambda r: r.score, reverse=True)
 
     logger.info(
-        "[Retrieval] query='%.60s…' → %d/%d chunks above threshold %.2f",
+        "[Retrieval] query='%.60s…' → %d/%d chunks above %.2f  "
+        "(section=%s source=%s drug=%s)",
         query,
         len(results),
         len(docs_list),
         min_score,
+        section_filter or "*",
+        source_filter or "*",
+        drug_filter or "*",
     )
     return results
 

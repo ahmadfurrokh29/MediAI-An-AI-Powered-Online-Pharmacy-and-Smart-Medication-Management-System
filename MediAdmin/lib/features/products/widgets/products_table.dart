@@ -100,7 +100,7 @@ class ProductsTable extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            '\$${product.price.toStringAsFixed(2)}',
+                            'Rs ${product.price.toStringAsFixed(2)}',
                             style: TextStyle(
                               fontWeight: FontWeight.w600,
                               decoration: product.salePrice > 0
@@ -113,7 +113,7 @@ class ProductsTable extends StatelessWidget {
                           ),
                           if (product.salePrice > 0)
                             Text(
-                              '\$${product.salePrice.toStringAsFixed(2)}',
+                              'Rs ${product.salePrice.toStringAsFixed(2)}',
                               style: const TextStyle(
                                 color: Colors.green,
                                 fontWeight: FontWeight.bold,

@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:med/data/repositories/authentication/authentication_repository.dart';
 import 'package:med/data/repositories/user/user_repository.dart';
+import 'package:med/data/services/cloudinary_service.dart';
 import 'package:med/features/personalization/models/user_model.dart';
 import 'package:med/utils/constants/image_strings.dart';
 import 'package:med/utils/helpers/network_manager.dart';
@@ -62,30 +63,44 @@ class UserController extends GetxController {
     dateOfBirthController.text = user.value.dateOfBirth;
   }
 
-  /// Upload profile image from gallery.
+  /// Upload profile image from gallery via Cloudinary.
+  /// Deletes the previous Cloudinary image (if any) before uploading the new one.
   Future<void> uploadUserProfilePicture() async {
     try {
-      final image = await ImagePicker().pickImage(
+      final picked = await ImagePicker().pickImage(
         source: ImageSource.gallery,
         imageQuality: 70,
         maxHeight: 512,
         maxWidth: 512,
       );
-      if (image == null) return;
+      if (picked == null) return;
 
       imageUploading.value = true;
 
-      // Upload image to Firebase Storage
-      final imageUrl = await userRepository.uploadImage(
-        'Users/Images/Profile/${uid}',
-        image,
+      final bytes = await picked.readAsBytes();
+      final fileName = picked.name;
+
+      // Delete old Cloudinary image if one exists
+      final oldPublicId = user.value.profilePicturePublicId;
+      if (oldPublicId.isNotEmpty) {
+        await CloudinaryService.deleteImage(oldPublicId);
+      }
+
+      // Upload new image to Cloudinary
+      final result = await CloudinaryService.uploadImage(
+        bytes: bytes,
+        fileName: fileName,
+        folder: 'MediAI/Users/ProfilePictures',
       );
 
-      // Update user profile picture field
-      final json = {'ProfilePicture': imageUrl};
-      await userRepository.updateUserDetails(json);
+      // Save new URL + publicId to Firestore
+      await userRepository.updateUserDetails({
+        'ProfilePicture': result.url,
+        'ProfilePicturePublicId': result.publicId,
+      });
 
-      user.value.profilePicture = imageUrl;
+      user.value.profilePicture = result.url;
+      user.value.profilePicturePublicId = result.publicId;
       user.refresh();
 
       MLoaders.successSnackBar(

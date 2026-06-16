@@ -25,9 +25,9 @@ class _CouponsPageState extends State<CouponsPage> {
   @override
   void initState() {
     super.initState();
-    // Controller is registered in AdminLayout.initState — just find it.
-    controller = Get.find<CouponController>();
-    // Refresh data in case it's stale
+    controller = Get.isRegistered<CouponController>()
+        ? Get.find<CouponController>()
+        : Get.put(CouponController())..initialize();
     controller.fetchCoupons();
     controller.fetchAnalytics();
   }

@@ -175,8 +175,8 @@ class _ChatBubble extends StatelessWidget {
             bottomRight: Radius.circular(isUser ? 4 : 18),
           ),
         ),
-        child: Text(
-          message.text,
+        child: _MarkdownText(
+          text: message.text,
           style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                 color: isUser
                     ? Colors.white
@@ -184,6 +184,108 @@ class _ChatBubble extends StatelessWidget {
               ),
         ),
       ),
+    );
+  }
+}
+
+/// Lightweight, dependency-free markdown renderer for chat bubbles.
+///
+/// Supports the subset the backend produces:
+///   - **bold**           -> bold text
+///   - *italic*           -> italic text
+///   - "- " / "* " / "• " -> bullet list items
+///   - "1. " "2. " …      -> numbered list items
+///   - blank lines        -> paragraph spacing
+///
+/// This avoids adding a markdown package (and the network fetch that needs),
+/// while guaranteeing no raw markdown symbols are shown to the user.
+class _MarkdownText extends StatelessWidget {
+  final String text;
+  final TextStyle style;
+
+  const _MarkdownText({required this.text, required this.style});
+
+  static final RegExp _inlineRe = RegExp(r'\*\*(.+?)\*\*|\*(.+?)\*');
+  static final RegExp _numberedRe = RegExp(r'^(\d+)\.\s+(.*)$');
+
+  /// Parse **bold** / *italic* in a single line into styled spans.
+  List<TextSpan> _inlineSpans(String line) {
+    final spans = <TextSpan>[];
+    int i = 0;
+    for (final m in _inlineRe.allMatches(line)) {
+      if (m.start > i) {
+        spans.add(TextSpan(text: line.substring(i, m.start)));
+      }
+      if (m.group(1) != null) {
+        spans.add(TextSpan(
+          text: m.group(1),
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ));
+      } else {
+        spans.add(TextSpan(
+          text: m.group(2),
+          style: const TextStyle(fontStyle: FontStyle.italic),
+        ));
+      }
+      i = m.end;
+    }
+    if (i < line.length) spans.add(TextSpan(text: line.substring(i)));
+    return spans;
+  }
+
+  Widget _richLine(String content, {String? bullet}) {
+    final body = Text.rich(
+      TextSpan(style: style, children: _inlineSpans(content)),
+    );
+    if (bullet == null) return body;
+    return Padding(
+      padding: const EdgeInsets.only(left: 2, top: 1, bottom: 1),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(bullet, style: style),
+          Expanded(child: body),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final lines = text.replaceAll('\r\n', '\n').split('\n');
+    final widgets = <Widget>[];
+
+    for (final raw in lines) {
+      final line = raw.trimRight();
+      final trimmed = line.trimLeft();
+
+      if (trimmed.isEmpty) {
+        widgets.add(const SizedBox(height: 8)); // paragraph gap
+        continue;
+      }
+
+      // Bullet list: "- ", "* ", "• "
+      if (trimmed.startsWith('- ') ||
+          trimmed.startsWith('* ') ||
+          trimmed.startsWith('• ')) {
+        widgets.add(_richLine(trimmed.substring(2).trimLeft(), bullet: '•  '));
+        continue;
+      }
+
+      // Numbered list: "1. ", "2. " …
+      final num = _numberedRe.firstMatch(trimmed);
+      if (num != null) {
+        widgets.add(_richLine(num.group(2)!, bullet: '${num.group(1)}.  '));
+        continue;
+      }
+
+      widgets.add(_richLine(line));
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: widgets,
     );
   }
 }

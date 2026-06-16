@@ -23,6 +23,7 @@ import threading
 from typing import List, Optional, Tuple
 
 from .retrieval import retrieve_context, build_context_block, RetrievedChunk
+from .query_router import route_query, QueryIntent
 from .config import TOP_K, MIN_SCORE
 
 logger = logging.getLogger(__name__)
@@ -72,12 +73,14 @@ _NOT_GROUNDED_SENTINELS = (
 
 
 def _format_prompt_with_context(user_query: str, context_block: str) -> str:
-    """Combine system prompt + context + user question into a single prompt."""
+    """Build the USER message: the context block + the question.
+
+    The system prompt (intent-specific, from the response formatter) is supplied
+    separately to _call_groq_rag, so it is no longer embedded here.
+    """
     return (
-        f"{_RAG_SYSTEM_PROMPT}\n\n"
-        f"[PHARMACEUTICAL CONTEXT]\n{context_block}\n\n"
-        f"[END OF CONTEXT]\n\n"
-        f"User Question: {user_query}"
+        f"[CONTEXT]\n{context_block}\n[END OF CONTEXT]\n\n"
+        f"Patient's question: {user_query}"
     )
 
 
@@ -85,14 +88,14 @@ def _format_prompt_with_context(user_query: str, context_block: str) -> str:
 _GROQ_MODEL = "llama-3.3-70b-versatile"
 
 
-def _call_groq_rag(prompt: str) -> str:
-    """Call Groq with the RAG-augmented prompt."""
+def _call_groq_rag(prompt: str, system_prompt: str = _RAG_SYSTEM_PROMPT) -> str:
+    """Call Groq with an intent-specific system prompt + the context/question."""
     from groq import Groq
     client = Groq(api_key=os.getenv("GROQ_API_KEY"), timeout=30.0, max_retries=1)
     response = client.chat.completions.create(
         model=_GROQ_MODEL,
         messages=[
-            {"role": "system", "content": _RAG_SYSTEM_PROMPT},
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt},
         ],
         max_tokens=400,
@@ -198,16 +201,31 @@ def _ingest_on_demand(drug: str) -> bool:
 
 
 def _generate_grounded(
-    user_query: str, chunks: List[RetrievedChunk]
+    user_query: str,
+    chunks: List[RetrievedChunk],
+    intent=None,
+    confidence: str = "high",
 ) -> Tuple[str, bool]:
-    """Build the context block, call Groq, and report whether it stayed grounded.
+    """Build the context block, call Groq with an INTENT-SPECIFIC patient-friendly
+    system prompt, and report whether it stayed grounded.
 
     Returns (reply, grounded). `grounded` is False when the model signalled it
     could not answer from the supplied context (the not-grounded sentinels).
     """
+    from .response_formatter import generation_system_prompt
+    from .intent_classifier import Intent
+
+    system_prompt = (
+        generation_system_prompt(intent, confidence)
+        if isinstance(intent, Intent) else _RAG_SYSTEM_PROMPT
+    )
+
     context_block = build_context_block(chunks)
     try:
-        reply = _call_groq_rag(_format_prompt_with_context(user_query, context_block))
+        reply = _call_groq_rag(
+            _format_prompt_with_context(user_query, context_block),
+            system_prompt=system_prompt,
+        )
         logger.info("[RAGChat] Groq responded ✓")
     except Exception as exc:
         logger.error("[RAGChat] Groq failed: %s", exc)
@@ -217,17 +235,151 @@ def _generate_grounded(
     return reply, grounded
 
 
+# Intents that, if detected mid-assessment, mean the user has changed topic and
+# we should abandon the symptom triage and answer their new question normally.
+_STRONG_SWITCH_INTENTS = frozenset({
+    QueryIntent.DOSAGE_QUERY,
+    QueryIntent.SIDE_EFFECT_QUERY,
+    QueryIntent.BRAND_GENERIC_QUERY,
+    QueryIntent.INGREDIENT_LOOKUP_QUERY,
+    QueryIntent.INTERACTION_QUERY,
+    QueryIntent.FDA_SAFETY_QUERY,
+    QueryIntent.MEDICINE_TO_DISEASE_QUERY,
+    QueryIntent.DISEASE_TO_MEDICINE_QUERY,
+    QueryIntent.DRUG_LOOKUP,
+    QueryIntent.WARNINGS_QUERY,
+})
+
+
 def rag_chat(
     user_query: str,
     top_k: int = TOP_K,
     min_score: float = MIN_SCORE,
     drug_filter: Optional[str] = None,
+    session_id: Optional[str] = None,
 ) -> dict:
     """
-    Main RAG chat entry point.
+    Stateful chat entry point (Phase 2).
+
+    Order of handling:
+      A. EMERGENCY pre-check — runs on every message; on a hit, abandon any
+         triage and return urgent guidance immediately.
+      B. ACTIVE TRIAGE continuation — if this session has an in-progress symptom
+         assessment, feed the message into the triage state machine (unless the
+         user cancels or clearly switches to a medicine question).
+      C. SYMPTOM start — if the query is freshly classified SYMPTOM_QUERY, begin
+         a new assessment instead of retrieving medicines.
+      D. Otherwise — the unchanged Phase 1 RAG pipeline (_rag_pipeline).
+
+    Always returns the Phase 1 keys plus: session_id, triage_active,
+    triage_state, emergency.
+    """
+    import uuid
+    from .conversation_state import ConversationStore
+    from .intent_classifier import classify
+    from .intent_classifier import Intent
+    from .symptom_triage import (
+        detect_emergency, build_emergency_reply,
+        start_assessment, continue_assessment, CANCEL_RE,
+    )
+    from .conversation_state import TriageState
+
+    if not session_id:
+        session_id = uuid.uuid4().hex
+    store = ConversationStore.instance()
+
+    # ── A. Emergency pre-check ────────────────────────────────────────────────
+    emergency = detect_emergency(user_query)
+    if emergency:
+        store.clear(session_id)
+        logger.warning(
+            "[Triage] EMERGENCY detected category=%s session=%s query='%.60s'",
+            emergency, session_id, user_query,
+        )
+        return {
+            "reply":         build_emergency_reply(emergency),
+            "sources":       [],
+            "rag_used":      False,
+            "intent":        "emergency",
+            "session_id":    session_id,
+            "triage_active": False,
+            "triage_state":  "emergency",
+            "emergency":     True,
+        }
+
+    # ── B. Active triage continuation (state checked BEFORE classification) ───
+    active_session = store.get(session_id)
+    if active_session and active_session.is_active():
+        logger.info(
+            "[Triage] active session=%s state=%s — routing follow-up before "
+            "intent classification", session_id, active_session.state.value,
+        )
+        # Explicit cancel always exits.
+        if CANCEL_RE.search(user_query):
+            store.clear(session_id)
+            logger.info("[Triage] user cancelled assessment session=%s", session_id)
+            return {
+                "reply": "No problem — I've stopped the symptom check. Ask me "
+                         "anything about your medicines whenever you like.",
+                "sources": [], "rag_used": False, "intent": "symptom_query",
+                "session_id": session_id, "triage_active": False,
+                "triage_state": "session_closed", "emergency": False,
+            }
+
+        # Topic-switch escape applies ONLY while gathering information. During
+        # WAITING_FOR_MEDICATION_CONSENT the message is a yes/no answer ("yes",
+        # "tell me", "no thanks") and MUST be handled by the state machine — not
+        # the intent classifier (which would mis-read "tell me" as a drug lookup
+        # and wrongly abandon the assessment).
+        if active_session.state == TriageState.GATHERING_INFORMATION:
+            ir = classify(user_query)
+            if ir.intent in _STRONG_SWITCH_INTENTS:
+                logger.info(
+                    "[Triage] intent switch (%s) during gathering — abandoning "
+                    "assessment session=%s", ir.intent.value, session_id,
+                )
+                store.clear(session_id)
+                # fall through to normal pipeline below
+            else:
+                return continue_assessment(session_id, user_query)
+        else:
+            # ASSESSMENT_COMPLETE / WAITING_FOR_MEDICATION_CONSENT / etc.
+            return continue_assessment(session_id, user_query)
+
+    # ── C. Fresh symptom → start assessment ───────────────────────────────────
+    router_result = route_query(user_query)
+    if router_result.intent == Intent.SYMPTOM_QUERY:
+        return start_assessment(session_id, router_result.entity, user_query)
+
+    # ── D. Normal Phase 1 pipeline ────────────────────────────────────────────
+    result = _rag_pipeline(
+        user_query, top_k=top_k, min_score=min_score,
+        drug_filter=drug_filter, router_result=router_result,
+    )
+    result.update({
+        "session_id":    session_id,
+        "triage_active": False,
+        "triage_state":  None,
+        "emergency":     False,
+    })
+    return result
+
+
+def _rag_pipeline(
+    user_query: str,
+    top_k: int = TOP_K,
+    min_score: float = MIN_SCORE,
+    drug_filter: Optional[str] = None,
+    router_result=None,
+) -> dict:
+    """
+    Phase 1 RAG pipeline (unchanged behaviour).
 
     Steps:
-      1. Retrieve relevant pharmaceutical chunks from ChromaDB
+      0. Route the query — direct-lookup intents (brand/generic/ingredient/disease)
+         are answered immediately from the pharma index without calling the LLM.
+         Section-aware intents (dosage, side-effects, etc.) get filter hints.
+      1. Retrieve relevant pharmaceutical chunks from ChromaDB (with optional filters)
       2. If nothing usable is found, try ON-DEMAND ingestion of the drug named
          in the query, then retrieve again
       3. Build a grounded context block and generate the answer with Groq
@@ -238,11 +390,31 @@ def rag_chat(
           "reply"    : str   — The grounded LLM response
           "sources"  : list  — List of citation dicts [{drug, section, source, score}]
           "rag_used" : bool  — Whether the answer was grounded in retrieved context
+          "intent"   : str   — Detected query intent (for debugging)
         }
     """
-    # ── Step 1: Retrieve ──────────────────────────────────────────────────────
+    # ── Step 0: Query routing ─────────────────────────────────────────────────
+    if router_result is None:
+        router_result = route_query(user_query)
+    logger.info("[RAGChat] intent=%s routed=%s", router_result.intent, router_result.routed)
+
+    # Direct-lookup answers need no LLM — return immediately
+    if router_result.routed and router_result.answer:
+        return {
+            "reply":    router_result.answer,
+            "sources":  [],
+            "rag_used": True,
+            "intent":   router_result.intent.value,
+        }
+
+    # ── Step 1: Retrieve (with section / source hints from router) ────────────
     chunks: List[RetrievedChunk] = retrieve_context(
-        query=user_query, top_k=top_k, min_score=min_score, drug_filter=drug_filter,
+        query=user_query,
+        top_k=top_k,
+        min_score=min_score,
+        drug_filter=drug_filter,
+        section_filter=router_result.section_filter,
+        source_filter=router_result.source_filter,
     )
 
     # ── Step 2a: Nothing retrieved → try to ingest the drug live, then retry ──
@@ -257,10 +429,19 @@ def rag_chat(
 
     if not chunks:
         logger.info("[RAGChat] No context found for query='%.60s…'", user_query)
-        return {"reply": _NO_CONTEXT_FALLBACK, "sources": [], "rag_used": False}
+        return {
+            "reply": _NO_CONTEXT_FALLBACK,
+            "sources": [],
+            "rag_used": False,
+            "intent": router_result.intent.value,
+        }
 
-    # ── Step 3: Generate grounded response ────────────────────────────────────
-    reply, grounded = _generate_grounded(user_query, chunks)
+    # ── Step 3: Generate grounded response (intent + confidence aware) ────────
+    from .response_formatter import confidence_from_chunks, append_grounded_meta
+    confidence, _top = confidence_from_chunks(chunks)
+    reply, grounded = _generate_grounded(
+        user_query, chunks, intent=router_result.intent, confidence=confidence,
+    )
 
     # ── Step 2b: Weak cross-drug match → the retrieved chunks were about other
     # drugs and the model couldn't ground the answer. If the query's actual drug
@@ -273,7 +454,16 @@ def rag_chat(
                 query=user_query, top_k=top_k, min_score=min_score, drug_filter=drug,
             )
             if fresh:
-                reply, grounded, chunks = (*_generate_grounded(user_query, fresh), fresh)
+                confidence, _top = confidence_from_chunks(fresh)
+                reply, grounded = _generate_grounded(
+                    user_query, fresh, intent=router_result.intent,
+                    confidence=confidence,
+                )
+                chunks = fresh
+
+    # ── Step 4: Attach natural source note + confidence caveat (formatter) ────
+    if grounded:
+        reply = append_grounded_meta(reply, chunks, router_result.intent, confidence)
 
     sources = [
         {
@@ -289,4 +479,5 @@ def rag_chat(
         "reply":    reply,
         "sources":  sources if grounded else [],
         "rag_used": grounded,
+        "intent":   router_result.intent.value,
     }

@@ -359,7 +359,7 @@ class _RecommendedProductsPageState extends State<RecommendedProductsPage> {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Text(
-                                    '\$${product.price.toStringAsFixed(2)}',
+                                    'Rs ${product.price.toStringAsFixed(2)}',
                                     style: const TextStyle(
                                       fontWeight: FontWeight.w600,
                                       fontSize: 14,
@@ -368,7 +368,7 @@ class _RecommendedProductsPageState extends State<RecommendedProductsPage> {
                                   if (product.salePrice > 0 &&
                                       product.salePrice < product.price)
                                     Text(
-                                      'Sale: \$${product.salePrice.toStringAsFixed(2)}',
+                                      'Sale: Rs ${product.salePrice.toStringAsFixed(2)}',
                                       style: TextStyle(
                                         fontSize: 11,
                                         color: Colors.green.shade600,

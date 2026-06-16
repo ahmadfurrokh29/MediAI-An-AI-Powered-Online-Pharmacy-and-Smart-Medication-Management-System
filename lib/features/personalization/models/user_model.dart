@@ -11,6 +11,7 @@ class UserModel {
   final String email;
   String phoneNumber;
   String profilePicture;
+  String profilePicturePublicId;
   String gender;
   String dateOfBirth;
 
@@ -23,6 +24,7 @@ class UserModel {
     required this.email,
     required this.phoneNumber,
     required this.profilePicture,
+    this.profilePicturePublicId = '',
     this.gender = '',
     this.dateOfBirth = '',
   });
@@ -58,6 +60,7 @@ class UserModel {
     email: '',
     phoneNumber: '',
     profilePicture: '',
+    profilePicturePublicId: '',
     gender: '',
     dateOfBirth: '',
   );
@@ -78,6 +81,7 @@ class UserModel {
       'Email': email,
       'PhoneNumber': phoneNumber,
       'ProfilePicture': profilePicture,
+      'ProfilePicturePublicId': profilePicturePublicId,
       'Gender': gender,
       'DateOfBirth': dateOfBirth,
 
@@ -109,6 +113,7 @@ class UserModel {
         email: data['Email'] ?? data['email'] ?? '',
         phoneNumber: data['PhoneNumber'] ?? data['phoneNumber'] ?? '',
         profilePicture: data['ProfilePicture'] ?? '',
+        profilePicturePublicId: data['ProfilePicturePublicId'] ?? '',
         gender: data['Gender'] ?? data['gender'] ?? '',
         dateOfBirth: data['DateOfBirth'] ?? data['dateOfBirth'] ?? '',
       );

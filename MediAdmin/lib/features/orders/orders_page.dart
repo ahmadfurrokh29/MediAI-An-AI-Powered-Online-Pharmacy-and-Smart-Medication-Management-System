@@ -190,7 +190,7 @@ class OrdersPage extends StatelessWidget {
                         DataCell(_MethodBadge(method: order.paymentMethod)),
                         DataCell(
                           Text(
-                            '\$${order.totalAmount.toStringAsFixed(2)}',
+                            'Rs ${order.totalAmount.toStringAsFixed(2)}',
                             style: const TextStyle(fontWeight: FontWeight.w600),
                           ),
                         ),

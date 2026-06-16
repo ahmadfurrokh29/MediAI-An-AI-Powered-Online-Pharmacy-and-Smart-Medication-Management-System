@@ -232,9 +232,19 @@ class _MedicineFormPageState extends State<MedicineFormPage> {
     return count;
   }
 
+  /// Total tablets taken per day, summed across all dose slots
+  /// (e.g. Morning 1 + Noon 2 + Night 0 = 3), not just the count of slots used.
+  int get _dailyDoseSum {
+    int sum = 0;
+    for (var slot in alarmSlots) {
+      sum +=
+          int.tryParse((slot['controller'] as TextEditingController).text) ?? 0;
+    }
+    return sum;
+  }
+
   String get _frequencyString {
-    final count = _activeSlotCount;
-    return '$count/day';
+    return '$_dailyDoseSum/day';
   }
 
   @override
@@ -779,7 +789,7 @@ class _MedicineFormPageState extends State<MedicineFormPage> {
     int totalDays = durVal;
     if (durationUnit == 'weeks') totalDays = durVal * 7;
     if (durationUnit == 'months') totalDays = durVal * 30;
-    return totalDays * _activeSlotCount;
+    return totalDays * _dailyDoseSum;
   }
 
   Future<void> _saveMedicine() async {

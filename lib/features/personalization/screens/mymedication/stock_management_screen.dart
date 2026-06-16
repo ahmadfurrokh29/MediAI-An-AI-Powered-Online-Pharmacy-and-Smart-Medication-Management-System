@@ -26,6 +26,47 @@ class _StockManagementScreenState extends State<StockManagementScreen> {
   List<Map<String, dynamic>> normalStockList = [];
   final Set<String> _loadingMeds = {};
 
+  /// Lowercased, trimmed product names that already have an order placed
+  /// for them which is not yet Delivered/Cancelled. Used to block duplicate
+  /// "Add to Cart" actions until that order resolves.
+  Set<String> _activeOrderedNames = {};
+
+  static const _resolvedOrderStatuses = {'delivered', 'cancelled'};
+
+  bool _hasActiveOrder(String medName) {
+    final lower = medName.toLowerCase().trim();
+    if (lower.isEmpty) return false;
+    return _activeOrderedNames.any(
+      (p) => p.contains(lower) || lower.contains(p),
+    );
+  }
+
+  Future<void> _loadActiveOrderedNames() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('Orders')
+          .where('customerId', isEqualTo: uid)
+          .get();
+
+      final names = <String>{};
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
+        final status = (data['orderStatus'] ?? '').toString().toLowerCase();
+        if (_resolvedOrderStatuses.contains(status)) continue;
+        final items = data['items'] as List<dynamic>? ?? [];
+        for (final item in items) {
+          final name = (item['productName'] ?? '').toString().toLowerCase().trim();
+          if (name.isNotEmpty) names.add(name);
+        }
+      }
+      _activeOrderedNames = names;
+    } catch (e) {
+      debugPrint('Error loading active ordered medicines: $e');
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -64,6 +105,7 @@ class _StockManagementScreenState extends State<StockManagementScreen> {
     if (uid == null) return;
 
     try {
+      await _loadActiveOrderedNames();
       final allMedicines = await LocalDB.getUserMedicines(uid);
 
       // Merge medicines with the same name: sum stock, combine disease names
@@ -209,9 +251,30 @@ class _StockManagementScreenState extends State<StockManagementScreen> {
     }
   }
 
-  Future<void> _addToCartFromStock(Map<String, dynamic> med) async {
+  Future<void> _addToCartFromStock(
+    Map<String, dynamic> med,
+    StockLevel level,
+  ) async {
     final medName = (med['medicine_name'] ?? '').toString().trim();
     if (medName.isEmpty) return;
+
+    if (level == StockLevel.normal) {
+      _showSnackbar(
+        '$medName is already in stock — no refill needed.',
+        MColors.primary,
+      );
+      return;
+    }
+
+    if (_hasActiveOrder(medName)) {
+      _showSnackbar(
+        '$medName already has a pending order. It can be reordered once '
+        'that order is Delivered or Cancelled.',
+        Colors.orange,
+      );
+      return;
+    }
+
     setState(() => _loadingMeds.add(medName));
 
     try {
@@ -300,6 +363,10 @@ class _StockManagementScreenState extends State<StockManagementScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: MColors.primary,
                   foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 10,
+                  ),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8)),
                 ),
@@ -711,14 +778,20 @@ class _StockManagementScreenState extends State<StockManagementScreen> {
                     ),
                   )
                 : Icon(
-                    Icons.add_shopping_cart,
-                    color: isLowOrOut ? Colors.red : MColors.primary,
+                    _hasActiveOrder(name)
+                        ? Icons.hourglass_top
+                        : Icons.add_shopping_cart,
+                    color: _hasActiveOrder(name)
+                        ? Colors.grey
+                        : (isLowOrOut ? Colors.red : MColors.primary),
                     size: 20,
                   ),
-            onPressed: _loadingMeds.contains(name)
+            onPressed: _loadingMeds.contains(name) || _hasActiveOrder(name)
                 ? null
-                : () => _addToCartFromStock(med),
-            tooltip: 'Add to Cart',
+                : () => _addToCartFromStock(med, level),
+            tooltip: _hasActiveOrder(name)
+                ? 'Order already placed — pending delivery/cancellation'
+                : 'Add to Cart',
           ),
         ],
       ),

@@ -153,42 +153,6 @@ class SettingsScreen extends StatelessWidget {
                     onTap: () {},
                   ),
 
-                  /// -- App Settings
-                  const SizedBox(height: MSizes.spaceBtwSections),
-                  const MSectionHeading(
-                    title: 'App Settings',
-                    showActionButton: false,
-                  ),
-                  const SizedBox(height: MSizes.spaceBtwItems),
-
-                  // const MSettingsMenuTile(
-                  //   icon: Iconsax.document_upload,
-                  //   title: 'Load Data',
-                  //   subTitle: 'Upload Data to your Cloud Firebase',
-                  // ),
-                  MSettingsMenuTile(
-                    icon: Iconsax.location,
-                    title: 'Geolocation',
-                    subTitle: 'Set recommendation based on location',
-                    trailing: Switch(
-                      value: true,
-                      onChanged: (value) {},
-                      activeTrackColor: MColors.primary,
-                      activeThumbColor: MColors.white,
-                    ),
-                  ),
-
-                  MSettingsMenuTile(
-                    icon: Iconsax.security_user,
-                    title: 'Safe Mode',
-                    subTitle: 'Search result is safe for all ages',
-                    trailing: Switch(
-                      value: false,
-                      onChanged: (value) {},
-                      activeTrackColor: MColors.primary,
-                      activeThumbColor: MColors.white,
-                    ),
-                  ),
 
                   // MSettingsMenuTile(
                   //   icon: Iconsax.image,

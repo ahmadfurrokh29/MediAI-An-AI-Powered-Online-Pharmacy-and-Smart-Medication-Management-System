@@ -20,8 +20,8 @@ app = FastAPI(title="MediAI — Pharmaceutical Chatbot & Coupon Engine")
 
 
 @app.on_event("startup")
-async def warmup_embedder():
-    """Pre-load the embedding model at startup so the first user request is fast."""
+async def warmup():
+    """Pre-load the embedding model and pharma index at startup."""
     import asyncio
     import logging
     async def _warm():
@@ -30,7 +30,13 @@ async def warmup_embedder():
             embed_query("warmup")
             logging.info("[Startup] Embedding model warmed up ✓")
         except Exception as exc:
-            logging.warning("[Startup] Warmup skipped: %s", exc)
+            logging.warning("[Startup] Embedder warmup skipped: %s", exc)
+        try:
+            from rag.pharma_index import PharmaIndex
+            stats = PharmaIndex.instance().stats()
+            logging.info("[Startup] Pharma index loaded ✓ %s", stats)
+        except Exception as exc:
+            logging.warning("[Startup] Pharma index load skipped: %s", exc)
     asyncio.create_task(_warm())
 
 app.add_middleware(
@@ -92,6 +98,12 @@ class RAGChatRequest(BaseModel):
         description="Optional drug name to restrict retrieval (e.g. 'ibuprofen')",
     )
     top_k: int = Field(5, ge=1, le=20, description="Max context chunks to retrieve")
+    session_id: Optional[str] = Field(
+        None,
+        description="Conversation/session id for multi-turn symptom triage. "
+                    "Send the same id on every message in a conversation; the "
+                    "server generates one if omitted (returned in the response).",
+    )
 
 
 class SourceCitation(BaseModel):
@@ -105,6 +117,12 @@ class RAGChatResponse(BaseModel):
     reply:    str
     sources:  List[SourceCitation]
     rag_used: bool
+    intent:   Optional[str] = None
+    # ── Phase 2: symptom triage / conversation state ──────────────────────────
+    session_id:    Optional[str] = None
+    triage_active: bool = False
+    triage_state:  Optional[str] = None
+    emergency:     bool = False
 
 
 @app.post("/chat", response_model=ChatResponse)
@@ -153,11 +171,17 @@ async def rag_chat_endpoint(request: RAGChatRequest):
         user_query=request.message,
         top_k=request.top_k,
         drug_filter=request.drug_filter,
+        session_id=request.session_id,
     )
     return RAGChatResponse(
         reply=result["reply"],
         sources=[SourceCitation(**s) for s in result["sources"]],
         rag_used=result["rag_used"],
+        intent=result.get("intent"),
+        session_id=result.get("session_id"),
+        triage_active=result.get("triage_active", False),
+        triage_state=result.get("triage_state"),
+        emergency=result.get("emergency", False),
     )
 
 
@@ -190,4 +214,44 @@ async def rag_status():
         "total_chunks": collection_count(),
         "target_drugs": TARGET_DRUGS,
     }
+
+
+# ── Pharma Index endpoints ────────────────────────────────────────────────────
+
+class EnrichRequest(BaseModel):
+    drug: str = Field(..., description="Generic or brand name to enrich with RxNorm data")
+    force: bool = Field(False, description="Re-fetch even if already indexed")
+
+
+@app.get("/rag/index/status", tags=["Pharma Index"])
+async def index_status():
+    """Returns pharma index stats: how many drugs, brands, ingredients, synonyms are indexed."""
+    from rag.pharma_index import PharmaIndex
+    return PharmaIndex.instance().stats()
+
+
+@app.get("/rag/index/drug/{name}", tags=["Pharma Index"])
+async def index_get_drug(name: str):
+    """Look up a specific drug in the pharma index by generic or brand name."""
+    from rag.pharma_index import PharmaIndex
+    idx = PharmaIndex.instance()
+    generic = idx.get_generic(name)
+    drug = idx.get_drug(generic or name)
+    if not drug:
+        return {"found": False, "name": name}
+    return {"found": True, "name": name, "resolved_generic": generic, **drug}
+
+
+@app.post("/rag/index/enrich", tags=["Pharma Index"])
+async def index_enrich(request: EnrichRequest):
+    """
+    Fetch RxNorm data for a drug and add it to the pharma index.
+    Runs synchronously (takes ~1-2s per drug).
+    """
+    import asyncio
+    from rag.ingestion.rxnorm_ingest import enrich_one
+    success = await asyncio.to_thread(enrich_one, request.drug, request.force)
+    from rag.pharma_index import PharmaIndex
+    drug_data = PharmaIndex.instance().get_drug(request.drug.lower())
+    return {"success": success, "drug": request.drug, "data": drug_data}
 

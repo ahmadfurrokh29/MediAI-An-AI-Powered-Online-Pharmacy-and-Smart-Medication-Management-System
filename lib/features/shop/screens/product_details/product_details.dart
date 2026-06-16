@@ -169,52 +169,42 @@ class _MedicineDetailsSection extends StatelessWidget {
           showActionButton: false,
         ),
         const SizedBox(height: MSizes.spaceBtwItems),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.blue.shade50,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.blue.shade100),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Prescribed
-              if (isPrescribed)
-                _DetailRow(
-                  icon: Icons.medical_services_outlined,
-                  iconColor: Colors.blue.shade700,
-                  label: 'Prescribed',
-                  value: 'Yes — Prescription Required',
-                  valueColor: Colors.blue.shade800,
-                  bold: true,
-                ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Prescribed
+            if (isPrescribed)
+              _DetailRow(
+                icon: Icons.medical_services_outlined,
+                iconColor: Colors.blue.shade400,
+                label: 'Prescribed',
+                value: 'Yes — Prescription Required',
+                bold: true,
+              ),
 
-              // Form
-              if (form.isNotEmpty) ...[
-                if (isPrescribed) const SizedBox(height: 10),
-                _DetailRow(
-                  icon: Icons.science_outlined,
-                  iconColor: Colors.teal.shade600,
-                  label: 'Form',
-                  value: form,
-                ),
-              ],
-
-              // Tablets/Capsules in pack
-              if (tabletsInPack > 0) ...[
-                if (isPrescribed || form.isNotEmpty)
-                  const SizedBox(height: 10),
-                _DetailRow(
-                  icon: Icons.inventory_2_outlined,
-                  iconColor: Colors.indigo.shade600,
-                  label: form.isNotEmpty ? '$form per Pack' : 'Units per Pack',
-                  value: tabletsInPack.toString(),
-                ),
-              ],
+            // Form
+            if (form.isNotEmpty) ...[
+              if (isPrescribed) const SizedBox(height: 10),
+              _DetailRow(
+                icon: Icons.science_outlined,
+                iconColor: Colors.teal.shade400,
+                label: 'Form',
+                value: form,
+              ),
             ],
-          ),
+
+            // Tablets/Capsules in pack
+            if (tabletsInPack > 0) ...[
+              if (isPrescribed || form.isNotEmpty)
+                const SizedBox(height: 10),
+              _DetailRow(
+                icon: Icons.inventory_2_outlined,
+                iconColor: Colors.indigo.shade400,
+                label: form.isNotEmpty ? '$form per Pack' : 'Units per Pack',
+                value: tabletsInPack.toString(),
+              ),
+            ],
+          ],
         ),
       ],
     );
@@ -227,7 +217,6 @@ class _DetailRow extends StatelessWidget {
     required this.iconColor,
     required this.label,
     required this.value,
-    this.valueColor,
     this.bold = false,
   });
 
@@ -235,7 +224,6 @@ class _DetailRow extends StatelessWidget {
   final Color iconColor;
   final String label;
   final String value;
-  final Color? valueColor;
   final bool bold;
 
   @override
@@ -248,14 +236,14 @@ class _DetailRow extends StatelessWidget {
         Text(
           '$label:  ',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey.shade700,
+                color: iconColor.withValues(alpha: 0.7),
               ),
         ),
         Expanded(
           child: Text(
             value,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: valueColor ?? Colors.black87,
+                  color: iconColor,
                   fontWeight: bold ? FontWeight.bold : FontWeight.w500,
                 ),
           ),

@@ -612,14 +612,19 @@ class _PrescriptionRequestDetailPageState
                               if (!_useCustom)
                                 DropdownButtonFormField<String>(
                                   value: _selectedResponse,
+                                  isExpanded: true,
                                   hint: const Text('Select message...',
                                       style: TextStyle(fontSize: 13)),
                                   items: _kResponseOptions
                                       .map((e) => DropdownMenuItem(
                                             value: e,
-                                            child: Text(e,
-                                                style: const TextStyle(
-                                                    fontSize: 12)),
+                                            child: Text(
+                                              e,
+                                              style: const TextStyle(
+                                                  fontSize: 12),
+                                              overflow:
+                                                  TextOverflow.ellipsis,
+                                            ),
                                           ))
                                       .toList(),
                                   onChanged: (v) => setState(

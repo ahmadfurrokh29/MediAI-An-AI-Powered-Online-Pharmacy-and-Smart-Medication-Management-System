@@ -22,8 +22,9 @@ class _CampaignsPageState extends State<CampaignsPage> {
   @override
   void initState() {
     super.initState();
-    controller = Get.find<CouponController>();
-    // Refresh campaigns + coupons list when this page loads
+    controller = Get.isRegistered<CouponController>()
+        ? Get.find<CouponController>()
+        : Get.put(CouponController())..initialize();
     controller.fetchCampaigns();
     controller.fetchCoupons();
   }

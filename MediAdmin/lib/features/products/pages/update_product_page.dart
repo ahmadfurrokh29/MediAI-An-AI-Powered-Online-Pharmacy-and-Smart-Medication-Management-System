@@ -613,7 +613,7 @@ class _UpdateProductPageState extends State<UpdateProductPage> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const Text(
-                                  "Price (\$)",
+                                  "Price (Rs)",
                                   style: TextStyle(fontWeight: FontWeight.w600),
                                 ),
                                 const SizedBox(height: 8),
@@ -646,7 +646,7 @@ class _UpdateProductPageState extends State<UpdateProductPage> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const Text(
-                                  "Sale Price (\$) - Optional",
+                                  "Sale Price (Rs) - Optional",
                                   style: TextStyle(fontWeight: FontWeight.w600),
                                 ),
                                 const SizedBox(height: 8),
