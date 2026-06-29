@@ -142,7 +142,7 @@ class CartController extends GetxController {
         salePrice: (product['salePrice'] as num? ?? 0).toDouble(),
         stock: (product['stock'] as num? ?? 0).toInt(),
         isPrescribed: product['isPrescribed'] as bool? ?? false,
-        tabletsInPack: (product['tabletsInPack'] as num? ?? 0).toInt(),
+        tabletsInPack: ((product['tabletsInPack'] ?? product['TabletsInPack']) as num? ?? 0).toInt(),
         quantity: quantity,
       );
       cartItems.add(item);
@@ -218,7 +218,7 @@ class CartController extends GetxController {
       salePrice: (product['salePrice'] as num? ?? 0).toDouble(),
       stock: (product['stock'] as num? ?? 0).toInt(),
       isPrescribed: product['isPrescribed'] as bool? ?? false,
-      tabletsInPack: (product['tabletsInPack'] as num? ?? 0).toInt(),
+      tabletsInPack: ((product['tabletsInPack'] ?? product['TabletsInPack']) as num? ?? 0).toInt(),
       quantity: quantity,
     );
     cartItems.add(item);

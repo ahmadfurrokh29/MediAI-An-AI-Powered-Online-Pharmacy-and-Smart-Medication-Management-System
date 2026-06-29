@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 // ── Replace with your deployed FastAPI base URL ───────────────────────────────
-const String _kApiBase = 'http://192.168.100.26:8800';
+const String _kApiBase = 'http://192.168.137.116:8800';
 
 class CouponApiResult {
   final bool valid;

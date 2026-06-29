@@ -16,7 +16,7 @@ class ChatService {
   /// Your machine's local IP on the Wi-Fi network.
   /// Change this if your computer's IP changes (run `ipconfig` to check).
   /// For Android emulator use: 'http://10.0.2.2:8800'
-  static const String _baseUrl = 'http://192.168.100.26:8800';
+  static const String _baseUrl = 'http://192.168.137.116:8800';
 
   // Generous timeout: the first question about a drug not yet in the knowledge
   // base triggers live on-demand ingestion (fetch + chunk + embed), which can

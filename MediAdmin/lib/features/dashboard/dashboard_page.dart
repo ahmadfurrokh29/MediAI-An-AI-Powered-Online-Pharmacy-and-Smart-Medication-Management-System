@@ -112,8 +112,8 @@ class DashboardPage extends StatelessWidget {
                 Expanded(
                   child: _statCard(
                     'Sales Total',
-                    '\$${ctrl.todaySalesTotal.toStringAsFixed(2)}',
-                    Icons.attach_money,
+                    'Rs ${ctrl.todaySalesTotal.toStringAsFixed(2)}',
+                    Icons.currency_rupee,
                     const Color(0xFF4299E1),
                     const Color(0xFFEBF8FF),
                   ),
@@ -122,7 +122,7 @@ class DashboardPage extends StatelessWidget {
                 Expanded(
                   child: _statCard(
                     'Avg Order Value',
-                    '\$${ctrl.todayAvgOrderValue.toStringAsFixed(2)}',
+                    'Rs ${ctrl.todayAvgOrderValue.toStringAsFixed(2)}',
                     Icons.trending_up,
                     const Color(0xFF9F7AEA),
                     const Color(0xFFF3EBFF),
@@ -364,7 +364,7 @@ class DashboardPage extends StatelessWidget {
                     ),
                     DataCell(
                       Text(
-                        '\$${o.totalAmount.toStringAsFixed(2)}',
+                        'Rs ${o.totalAmount.toStringAsFixed(2)}',
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,

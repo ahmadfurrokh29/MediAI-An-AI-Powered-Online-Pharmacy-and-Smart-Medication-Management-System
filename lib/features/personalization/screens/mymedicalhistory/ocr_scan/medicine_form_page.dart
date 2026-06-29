@@ -140,15 +140,22 @@ class _MedicineFormPageState extends State<MedicineFormPage> {
         }
       }
     } else {
-      // Parse from frequency string like "1/day" or "3/day"
-      final freq = med['frequency'] ?? '1/day';
-      final freqParts = freq.toString().split('/');
-      int count = 1;
-      if (freqParts.length == 2) count = int.tryParse(freqParts[0]) ?? 1;
-      String baseDose = med['specific_dose'] ?? '1';
-      if (count >= 1) morningDose = baseDose;
-      if (count >= 2) noonDose = baseDose;
-      if (count >= 3) nightDose = baseDose;
+      final freq = (med['frequency'] ?? '').toString().trim();
+      if (freq.contains('+')) {
+        // Gemini returns "Morning+Noon+Night" format e.g. "1+2+0"
+        final parts = freq.split('+');
+        morningDose = (parts.isNotEmpty && parts[0].isNotEmpty) ? parts[0] : '0';
+        noonDose    = (parts.length > 1 && parts[1].isNotEmpty) ? parts[1] : '0';
+        nightDose   = (parts.length > 2 && parts[2].isNotEmpty) ? parts[2] : '0';
+      } else {
+        // Saved medicine format like "3/day"
+        final freqParts = freq.split('/');
+        int count = freq.isNotEmpty ? (int.tryParse(freqParts[0]) ?? 1) : 1;
+        String baseDose = med['specific_dose'] ?? '1';
+        if (count >= 1) morningDose = baseDose;
+        if (count >= 2) noonDose = baseDose;
+        if (count >= 3) nightDose = baseDose;
+      }
     }
 
     morningDoseController = TextEditingController(text: morningDose);
