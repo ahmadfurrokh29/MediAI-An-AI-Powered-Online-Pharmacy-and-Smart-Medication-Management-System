@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:med/utils/constants/colors.dart';
 import 'package:med/utils/constants/sizes.dart';
@@ -31,7 +30,7 @@ class MAppBar extends StatelessWidget implements PreferredSizeWidget {
         automaticallyImplyLeading: false,
         leading: showBackArrow
             ? IconButton(
-                onPressed: () => Get.back(),
+                onPressed: () => Navigator.maybePop(context),
                 icon: Icon(
                   Iconsax.arrow_left,
                   color: dark ? MColors.white : MColors.dark,
